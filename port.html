@@ -254,7 +254,8 @@
     }
 
     /* 우측 상단 홈 버튼 스타일 */
-    .home-glass-btn {
+    .home-glass-btn,
+    .back-to-choice-btn {
       position: absolute;
       top: 24px;
       right: 24px;
@@ -280,7 +281,23 @@
       pointer-events: auto;
     }
 
-    .home-glass-btn svg {
+    .back-to-choice-btn {
+      top: 80px;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transform: scale(0.9);
+    }
+
+    .back-to-choice-btn.visible {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transform: scale(1);
+    }
+
+    .home-glass-btn svg,
+    .back-to-choice-btn svg {
       width: 20px;
       height: 20px;
       fill: none;
@@ -292,7 +309,8 @@
       transition: transform 0.3s ease;
     }
 
-    .home-glass-btn:hover {
+    .home-glass-btn:hover,
+    .back-to-choice-btn:hover {
       transform: scale(1.1);
       box-shadow: 
         0 0 16px rgba(255, 255, 255, 0.4),
@@ -300,11 +318,13 @@
         inset 1px 1.5px 3px rgba(255, 255, 255, 0.95);
     }
 
-    .home-glass-btn:hover svg {
+    .home-glass-btn:hover svg,
+    .back-to-choice-btn:hover svg {
       transform: scale(1.08);
     }
 
-    .home-glass-btn:active {
+    .home-glass-btn:active,
+    .back-to-choice-btn:active {
       transform: scale(0.92);
     }
   </style>
@@ -318,6 +338,13 @@
         <svg viewBox="0 0 24 24">
           <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
           <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+      </button>
+
+      <button id="backToChoiceBtn" class="back-to-choice-btn" aria-label="두 선택 버튼 화면으로 돌아가기">
+        <svg viewBox="0 0 24 24">
+          <path d="M19 12H5"></path>
+          <polyline points="12 19 5 12 12 5"></polyline>
         </svg>
       </button>
 
@@ -392,6 +419,7 @@
         const leftBtn = document.getElementById('leftBtn');
         const rightBtn = document.getElementById('rightBtn');
         const homeBtn = document.getElementById('homeBtn');
+        const backToChoiceBtn = document.getElementById('backToChoiceBtn');
         const hornAmbience = document.getElementById('hornAmbience');
         const waveAmbience = document.getElementById('waveAmbience');
         const crowdAmbience = document.getElementById('crowdAmbience');
@@ -424,6 +452,7 @@
         let currentPortAudioMode = 'full';
         let portAudioMixApplied = false;
         let hornTimer = null;
+        let videoSwitchToken = 0;
 
         function safelyPlayAudio(audio, restart = false) {
           if (!audio) return;
@@ -591,13 +620,16 @@
         document.addEventListener('keydown', unlockPortAudio, true);
 
         function switchVideoSeamlessly(currentVid, nextVid, onComplete) {
+          const switchToken = ++videoSwitchToken;
           nextVid.currentTime = 0;
 
           const onPlaying = () => {
             nextVid.removeEventListener('playing', onPlaying);
+            if (switchToken !== videoSwitchToken) return;
             nextVid.classList.add('active');
 
             setTimeout(() => {
+              if (switchToken !== videoSwitchToken) return;
               currentVid.classList.remove('active');
               currentVid.pause();
               if (onComplete) onComplete();
@@ -609,6 +641,7 @@
           const playPromise = nextVid.play();
           if (playPromise !== undefined) {
             playPromise.catch(() => {
+              if (switchToken !== videoSwitchToken) return;
               nextVid.classList.add('active');
               currentVid.classList.remove('active');
               currentVid.pause();
@@ -639,6 +672,7 @@
         if (leftBtn) {
           leftBtn.addEventListener('click', () => {
             applyPortAudioMode('wall');
+            if (backToChoiceBtn) backToChoiceBtn.classList.add('visible');
             if (leftBtn) leftBtn.classList.remove('visible');
             if (rightBtn) rightBtn.classList.remove('visible');
             switchVideoSeamlessly(villageVideo, wallVideo);
@@ -648,6 +682,7 @@
         if (rightBtn) {
           rightBtn.addEventListener('click', () => {
             applyPortAudioMode('shop');
+            if (backToChoiceBtn) backToChoiceBtn.classList.add('visible');
             if (leftBtn) leftBtn.classList.remove('visible');
             if (rightBtn) rightBtn.classList.remove('visible');
             switchVideoSeamlessly(villageVideo, shopVideo);
@@ -662,7 +697,31 @@
 
         if (wallVideo) {
           wallVideo.addEventListener('ended', () => {
+            if (!wallVideo.classList.contains('active')) return;
             switchVideoSeamlessly(wallVideo, wallLoopVideo);
+          });
+        }
+
+        if (backToChoiceBtn) {
+          backToChoiceBtn.addEventListener('click', () => {
+            videoSwitchToken += 1;
+
+            [bgVideo, zoomVideo, villageVideo, shopVideo, wallVideo, wallLoopVideo].forEach(video => {
+              if (!video) return;
+              video.pause();
+              video.classList.remove('active');
+              try { video.currentTime = 0; } catch (_) {}
+            });
+
+            villageVideo.classList.add('active');
+            villageVideo.currentTime = 0;
+            const playPromise = villageVideo.play();
+            if (playPromise !== undefined) playPromise.catch(() => {});
+
+            if (leftBtn) leftBtn.classList.add('visible');
+            if (rightBtn) rightBtn.classList.add('visible');
+            backToChoiceBtn.classList.remove('visible');
+            applyPortAudioMode('full');
           });
         }
 
@@ -678,3 +737,4 @@
 
 </body>
 </html>
+
