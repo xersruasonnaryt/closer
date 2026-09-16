@@ -150,7 +150,7 @@
       border-color: rgba(255, 255, 255, 0.6);
       box-shadow: 
         0 0 14px rgba(255, 180, 220, 0.25), 
-        0 0 20px rgba(150, 220, 255, 0.25), 
+        0 0 20px rgba(160, 230, 255, 0.25), 
         3px 8px 16px rgba(0, 0, 0, 0.12), 
         inset 1px 1.5px 3px rgba(255, 255, 255, 0.9), 
         inset -1px -2px 6px rgba(255, 255, 255, 0.3);
@@ -252,12 +252,75 @@
     #leftBtn:active, #rightBtn:active {
       transform: translate(-50%, -50%) scale(0.92);
     }
+
+    /* 우측 상단 홈 버튼 스타일 */
+    .home-glass-btn {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      z-index: 50;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.05) 60%, rgba(255, 255, 255, 0.15) 100%);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      box-shadow: 
+        0 0 12px rgba(255, 255, 255, 0.2),
+        2px 6px 14px rgba(0, 0, 0, 0.15), 
+        inset 1px 1px 2px rgba(255, 255, 255, 0.8), 
+        inset -1px -1px 4px rgba(255, 255, 255, 0.2);
+      cursor: pointer;
+      outline: none;
+      transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+      pointer-events: auto;
+    }
+
+    .home-glass-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: #ffffff;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+      transition: transform 0.3s ease;
+    }
+
+    .home-glass-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 
+        0 0 16px rgba(255, 255, 255, 0.4),
+        4px 8px 20px rgba(0, 0, 0, 0.2),
+        inset 1px 1.5px 3px rgba(255, 255, 255, 0.95);
+    }
+
+    .home-glass-btn:hover svg {
+      transform: scale(1.08);
+    }
+
+    .home-glass-btn:active {
+      transform: scale(0.92);
+    }
   </style>
 </head>
 <body>
 
   <div id="app-container">
     <div class="video-container">
+      <!-- 우측 상단 홈 버튼 -->
+      <button id="homeBtn" class="home-glass-btn" aria-label="메인 화면 세 번째 섹션으로 이동">
+        <svg viewBox="0 0 24 24">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+      </button>
+
       <!-- 1. 기본 배경 영상 (무한 루프) -->
       <video id="bgVideo" class="fullscreen-video active" autoplay loop muted playsinline preload="auto">
         <source src="port.mp4" type="video/mp4" />
@@ -328,6 +391,7 @@
         const overlay = document.getElementById('overlay');
         const leftBtn = document.getElementById('leftBtn');
         const rightBtn = document.getElementById('rightBtn');
+        const homeBtn = document.getElementById('homeBtn');
         const hornAmbience = document.getElementById('hornAmbience');
         const waveAmbience = document.getElementById('waveAmbience');
         const crowdAmbience = document.getElementById('crowdAmbience');
@@ -366,9 +430,7 @@
           if (restart) audio.currentTime = 0;
           const playPromise = audio.play();
           if (playPromise !== undefined) {
-            playPromise.catch(() => {
-              // 유음 자동 재생이 차단되면 첫 사용자 입력에서 다시 시도합니다.
-            });
+            playPromise.catch(() => {});
           }
         }
 
@@ -524,12 +586,10 @@
           document.removeEventListener('keydown', unlockPortAudio, true);
         }
 
-        // 허용된 브라우저에서는 진입 즉시 재생하고, 차단되면 첫 입력에서 재시도합니다.
         applyPortAudioMode('full', true);
         document.addEventListener('pointerdown', unlockPortAudio, true);
         document.addEventListener('keydown', unlockPortAudio, true);
 
-        // 비디오 매끄러운 전환 함수
         function switchVideoSeamlessly(currentVid, nextVid, onComplete) {
           nextVid.currentTime = 0;
 
@@ -557,7 +617,6 @@
           }
         }
 
-        // 버튼 클릭 -> 두 번째 영상(port zoom) 재생
         if (playBtn) {
           playBtn.addEventListener('click', () => {
             resumeCurrentPortAudio();
@@ -566,7 +625,6 @@
           });
         }
 
-        // 두 번째 영상 종료 -> 세 번째 영상(port z to village) 재생 및 버튼 노출
         if (zoomVideo) {
           zoomVideo.addEventListener('ended', () => {
             switchVideoSeamlessly(zoomVideo, villageVideo, () => {
@@ -578,7 +636,6 @@
           });
         }
 
-        // 왼쪽 버튼 클릭 -> 두 원형 버튼 숨기기 & 다섯 번째 영상(port z to wall) 1회 재생
         if (leftBtn) {
           leftBtn.addEventListener('click', () => {
             applyPortAudioMode('wall');
@@ -588,7 +645,6 @@
           });
         }
 
-        // 오른쪽 버튼 클릭 -> 두 원형 버튼 숨기기 & 네 번째 영상(port z to shop) 1회 재생
         if (rightBtn) {
           rightBtn.addEventListener('click', () => {
             applyPortAudioMode('shop');
@@ -598,17 +654,22 @@
           });
         }
 
-        // 네 번째 영상(shop) 재생 완료 시 일시정지 (마지막 프레임 고정)
         if (shopVideo) {
           shopVideo.addEventListener('ended', () => {
             shopVideo.pause();
           });
         }
 
-        // 다섯 번째 영상(wall) 재생 완료 시 여섯 번째 루프 영상(port wall)으로 전환
         if (wallVideo) {
           wallVideo.addEventListener('ended', () => {
             switchVideoSeamlessly(wallVideo, wallLoopVideo);
+          });
+        }
+
+        // 홈 버튼 클릭 시 메인 페이지 세 번째 섹션으로 이동
+        if (homeBtn) {
+          homeBtn.addEventListener('click', () => {
+            window.location.href = 'new main.html#gallerySection';
           });
         }
       })();
