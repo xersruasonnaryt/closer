@@ -45,9 +45,11 @@
       transition: opacity 0.4s cubic-bezier(0.25, 1, 0.5, 1);
     }
 
+    /* 첫 번째 배경 비디오(#bgVideo)는 초기부터 노출되도록 강제 지정 */
+    #bgVideo,
     .fullscreen-video.active {
-      opacity: 1;
-      visibility: visible;
+      opacity: 1 !important;
+      visibility: visible !important;
     }
 
     /* 레이어 순서 */
@@ -153,7 +155,6 @@
       }
     }
 
-    /* ★ Click 위치 조절 레이어 ★ */
     .content-overlay {
       position: absolute;
       z-index: 30; 
@@ -170,7 +171,6 @@
       pointer-events: none;
     }
 
-    /* 맑고 투명한 파스텔 글래스모피즘 버튼 */
     .pure-glass-btn {
       pointer-events: auto;
       width: 80px;
@@ -312,7 +312,6 @@
 </head>
 <body>
 
-  <!-- 전체 요소를 하나로 감싸서 동적 파싱/대체 시 스크립트 파싱 오류 차단 -->
   <div id="app-container">
     <div class="video-container">
       <button id="homeBtn" class="home-glass-btn" aria-label="메인 화면 세 번째 섹션으로 이동">
@@ -322,32 +321,33 @@
         </svg>
       </button>
 
+      <!-- 비디오 경로에서 띄어쓰기를 '-'로 수정하는 것이 좋습니다 -->
       <video id="bgVideo" class="fullscreen-video active" autoplay loop muted playsinline preload="auto">
         <source src="picnic.mp4" type="video/mp4" />
       </video>
 
       <video id="zoomTransitionVideo" class="fullscreen-video" muted playsinline preload="auto">
-        <source src="picnic to zoom.mp4" type="video/mp4" />
+        <source src="picnic-to-zoom.mp4" type="video/mp4" />
       </video>
 
       <video id="zoomLoopVideo" class="fullscreen-video" loop muted playsinline preload="auto">
-        <source src="picnic zoom.mp4" type="video/mp4" />
+        <source src="picnic-zoom.mp4" type="video/mp4" />
       </video>
 
       <video id="flowerVideo" class="fullscreen-video" muted playsinline preload="auto">
-        <source src="picnic z to flower.mp4" type="video/mp4" />
+        <source src="picnic-z-to-flower.mp4" type="video/mp4" />
       </video>
 
       <video id="flowerLoopVideo" class="fullscreen-video" loop muted playsinline preload="auto">
-        <source src="picnic flower.mp4" type="video/mp4" />
+        <source src="picnic-flower.mp4" type="video/mp4" />
       </video>
 
       <video id="fishVideo" class="fullscreen-video" muted playsinline preload="auto">
-        <source src="picnic z to fish.mp4" type="video/mp4" />
+        <source src="picnic-z-to-fish.mp4" type="video/mp4" />
       </video>
 
       <video id="fishLoopVideo" class="fullscreen-video" loop muted playsinline preload="auto">
-        <source src="picnic fish.mp4" type="video/mp4" />
+        <source src="picnic-fish.mp4" type="video/mp4" />
       </video>
 
       <button id="flowerPointBtn" class="glass-lens-btn" aria-label="꽃과 나비 포인트"></button>
@@ -361,7 +361,7 @@
     </div>
 
     <script>
-      (function initPicnicPage() {
+      document.addEventListener("DOMContentLoaded", () => {
         const bgVideo = document.getElementById('bgVideo');
         const zoomTransition = document.getElementById('zoomTransitionVideo');
         const zoomLoop = document.getElementById('zoomLoopVideo');
@@ -378,18 +378,31 @@
 
         const allVideos = [bgVideo, zoomTransition, zoomLoop, flowerVideo, flowerLoop, fishVideo, fishLoop];
         
-        allVideos.forEach(vid => {
-          if (vid) vid.load();
-        });
-
-        // 첫 번째 비디오 강제 재생 실행
+        // 첫 번째 배경 비디오 강제 음소거 및 즉시 재생 (Autoplay 통과 처리)
         if (bgVideo) {
-          bgVideo.currentTime = 0;
-          bgVideo.play().catch(e => console.log("bgVideo 재생 대기:", e));
+          bgVideo.muted = true;
+          
+          const startPlay = () => {
+            const playPromise = bgVideo.play();
+            if (playPromise !== undefined) {
+              playPromise.catch(e => {
+                console.log("자동 재생 대기 중:", e);
+              });
+            }
+          };
+
+          // 비디오 버퍼링 준비 완료 시 실행
+          if (bgVideo.readyState >= 3) {
+            startPlay();
+          } else {
+            bgVideo.addEventListener('canplay', startPlay, { once: true });
+          }
         }
 
+        // 전환 비디오 로직 함수
         function switchVideoSeamlessly(currentVid, nextVid, onEndedCallback) {
           nextVid.currentTime = 0;
+          nextVid.muted = true;
 
           const onPlaying = () => {
             nextVid.removeEventListener('playing', onPlaying);
@@ -458,10 +471,10 @@
 
         if (homeBtn) {
           homeBtn.addEventListener('click', () => {
-            window.location.href = 'index.html#section3';
+            window.location.href = 'index.html'; // 또는 main 페이지 경로
           });
         }
-      })();
+      });
     </script>
   </div>
 
