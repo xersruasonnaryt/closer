@@ -404,6 +404,16 @@
       브라우저가 비디오 태그를 지원하지 않습니다.
     </video>
 
+    <audio id="cricketAmbience" loop preload="auto" aria-hidden="true">
+      <source src="https://cdn.pixabay.com/audio/2022/03/09/audio_0f63809db8.mp3" type="audio/mpeg" />
+    </audio>
+    <audio id="curtainAmbience" loop preload="auto" aria-hidden="true">
+      <source src="https://cdn.pixabay.com/audio/2021/08/04/audio_7e29d7fa74.mp3" type="audio/mpeg" />
+    </audio>
+    <audio id="lullabyAmbience" loop preload="auto" aria-hidden="true">
+      <source src="https://cdn.pixabay.com/audio/2025/06/13/audio_29bd11e39b.mp3" type="audio/mpeg" />
+    </audio>
+
     <div class="content-overlay" id="overlay">
       <button class="pure-glass-btn" id="playBtn" aria-label="버튼">
         Click
@@ -425,8 +435,71 @@
     
     const leftBtn = document.getElementById('leftBtn');
     const rightBtn = document.getElementById('rightBtn');
+    const cricketAmbience = document.getElementById('cricketAmbience');
+    const curtainAmbience = document.getElementById('curtainAmbience');
+    const lullabyAmbience = document.getElementById('lullabyAmbience');
 
     let transitionTriggered = false;
+    let nightAudioMode = 'full';
+
+    const nightVolumes = {
+      full: { cricket: 0.26, curtain: 0.13, lullaby: 0.11 },
+      window: { cricket: 0.30, curtain: 0.17 },
+      phone: { lullaby: 0.20 }
+    };
+
+    function safelyPlayAudio(audio) {
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          // 소리 자동 재생이 막힌 경우 첫 사용자 입력에서 다시 시도합니다.
+        });
+      }
+    }
+
+    function stopAudio(audio) {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+
+    function applyNightAudioMode(mode) {
+      nightAudioMode = mode;
+
+      if (mode === 'window') {
+        stopAudio(lullabyAmbience);
+        cricketAmbience.volume = nightVolumes.window.cricket;
+        curtainAmbience.volume = nightVolumes.window.curtain;
+        safelyPlayAudio(cricketAmbience);
+        safelyPlayAudio(curtainAmbience);
+        return;
+      }
+
+      if (mode === 'phone') {
+        stopAudio(cricketAmbience);
+        stopAudio(curtainAmbience);
+        lullabyAmbience.volume = nightVolumes.phone.lullaby;
+        safelyPlayAudio(lullabyAmbience);
+        return;
+      }
+
+      cricketAmbience.volume = nightVolumes.full.cricket;
+      curtainAmbience.volume = nightVolumes.full.curtain;
+      lullabyAmbience.volume = nightVolumes.full.lullaby;
+      safelyPlayAudio(cricketAmbience);
+      safelyPlayAudio(curtainAmbience);
+      safelyPlayAudio(lullabyAmbience);
+    }
+
+    function unlockNightAudio() {
+      applyNightAudioMode(nightAudioMode);
+      document.removeEventListener('pointerdown', unlockNightAudio, true);
+      document.removeEventListener('keydown', unlockNightAudio, true);
+    }
+
+    // 허용된 브라우저에서는 진입 즉시 재생하고, 차단되면 첫 입력에서 재시도합니다.
+    applyNightAudioMode('full');
+    document.addEventListener('pointerdown', unlockNightAudio, true);
+    document.addEventListener('keydown', unlockNightAudio, true);
 
     function playFromStart(video) {
       if (video.readyState === 0) video.load();
@@ -447,6 +520,7 @@
     }
 
     playBtn.addEventListener('click', () => {
+      applyNightAudioMode('full');
       overlay.classList.add('hidden');
       overlay.classList.remove('visible');
 
@@ -495,6 +569,7 @@
 
     // 왼쪽 버튼 클릭 시 -> nightroom z to window.mp4 전환 (프레임 튐 방지 처리)
     leftBtn.addEventListener('click', () => {
+      applyNightAudioMode('window');
       leftBtn.classList.remove('visible');
       rightBtn.classList.remove('visible');
       leftBtn.classList.add('fade-out');
@@ -515,6 +590,7 @@
 
     // 오른쪽 버튼 클릭 시 -> nightroom z to phone.mp4 재생
     rightBtn.addEventListener('click', () => {
+      applyNightAudioMode('phone');
       leftBtn.classList.remove('visible');
       rightBtn.classList.remove('visible');
       leftBtn.classList.add('fade-out');
