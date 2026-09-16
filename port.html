@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>바람이 불어오는 한적한 포구</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden; /* 스크롤바 제거 */
+      background-color: #000; /* 비디오 로딩 전/여백 기본 배경색 */
+    }
+
+    /* 비디오 컨테이너 및 비디오 스타일 */
+    .video-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .fullscreen-video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 100%;
+      height: 100%;
+      /* 화면 비율에 맞춰 여백 없이 꽉 채우기 */
+      object-fit: cover; 
+      transform: translate(-50%, -50%);
+    }
+
+    /* (선택 사항) 비디오 위에 얹어질 콘텐츠 영역 */
+    .content-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 10;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #ffffff;
+      pointer-events: none; /* 클릭 이벤트가 비디오로 통과하도록 설정 */
+    }
+
+    .content-overlay h1 {
+      font-size: 3rem;
+      text-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="video-container">
+    <!-- 
+      ▼▼▼ [동영상 경로 넣는 곳] ▼▼▼
+      src="port.mp4" 부분에 PC 내 비디오 경로 또는 파일명을 입력하세요.
+    -->
+    <video class="fullscreen-video" autoplay loop muted playsinline>
+      <source src="port.mp4" type="video/mp4" />
+      <!-- MP4 외 다른 포맷을 쓸 경우 아래처럼 추가 가능 -->
+      <!-- <source src="my-video.webm" type="video/webm" /> -->
+      브라우저가 비디오 태그를 지원하지 않습니다.
+    </video>
+
+    <!-- (선택 사항) 비디오 위에 글자나 텍스트를 띄우고 싶을 때 사용 -->
+    <div class="content-overlay">
+      <!-- <h1>원하는 문구를 입력하세요</h1> -->
+    </div>
+  </div>
+
+</body>
+</html>
