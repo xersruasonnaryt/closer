@@ -288,6 +288,22 @@
         <source src="port wall.mp4" type="video/mp4" />
       </video>
 
+      <audio id="hornAmbience" preload="auto" aria-hidden="true">
+        <source src="https://cdn.pixabay.com/audio/2022/03/10/audio_39ffd1c0d0.mp3" type="audio/mpeg" />
+      </audio>
+      <audio id="waveAmbience" loop preload="auto" aria-hidden="true">
+        <source src="https://cdn.pixabay.com/audio/2024/10/12/audio_7dd52a2e33.mp3" type="audio/mpeg" />
+      </audio>
+      <audio id="crowdAmbience" loop preload="auto" aria-hidden="true">
+        <source src="https://cdn.pixabay.com/audio/2022/03/14/audio_b34d1e62d3.mp3" type="audio/mpeg" />
+      </audio>
+      <audio id="flagAmbience" loop preload="auto" aria-hidden="true">
+        <source src="https://cdn.pixabay.com/audio/2026/03/01/audio_1ff3c8dd71.mp3" type="audio/mpeg" />
+      </audio>
+      <audio id="windAmbience" loop preload="auto" aria-hidden="true">
+        <source src="https://cdn.pixabay.com/audio/2025/12/28/audio_51b7de1a9f.mp3" type="audio/mpeg" />
+      </audio>
+
       <!-- Click 버튼 오버레이 -->
       <div class="content-overlay" id="overlay">
         <button class="pure-glass-btn" id="playBtn" aria-label="재생 버튼">
@@ -312,6 +328,11 @@
         const overlay = document.getElementById('overlay');
         const leftBtn = document.getElementById('leftBtn');
         const rightBtn = document.getElementById('rightBtn');
+        const hornAmbience = document.getElementById('hornAmbience');
+        const waveAmbience = document.getElementById('waveAmbience');
+        const crowdAmbience = document.getElementById('crowdAmbience');
+        const flagAmbience = document.getElementById('flagAmbience');
+        const windAmbience = document.getElementById('windAmbience');
 
         if (bgVideo) bgVideo.load();
         if (zoomVideo) zoomVideo.load();
@@ -319,6 +340,194 @@
         if (shopVideo) shopVideo.load();
         if (wallVideo) wallVideo.load();
         if (wallLoopVideo) wallLoopVideo.load();
+
+        const portAudioTracks = {
+          horn: hornAmbience,
+          wave: waveAmbience,
+          crowd: crowdAmbience,
+          flag: flagAmbience,
+          wind: windAmbience
+        };
+
+        const portAudioMixes = {
+          full: { horn: 0.20, wave: 0.20, crowd: 0.15, flag: 0.13, wind: 0.10 },
+          wall: { horn: 0, wave: 0.24, crowd: 0, flag: 0.18, wind: 0.14 },
+          shop: { horn: 0.26, wave: 0, crowd: 0.19, flag: 0, wind: 0 }
+        };
+
+        const audioFadeJobs = new Map();
+        const AUDIO_FADE_OUT_MS = 1800;
+        let currentPortAudioMode = 'full';
+        let portAudioMixApplied = false;
+        let hornTimer = null;
+
+        function safelyPlayAudio(audio, restart = false) {
+          if (!audio) return;
+          if (restart) audio.currentTime = 0;
+          const playPromise = audio.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(() => {
+              // 유음 자동 재생이 차단되면 첫 사용자 입력에서 다시 시도합니다.
+            });
+          }
+        }
+
+        function cancelAudioFade(audio) {
+          const job = audioFadeJobs.get(audio);
+          if (!job) return;
+          cancelAnimationFrame(job.rafId);
+          audioFadeJobs.delete(audio);
+        }
+
+        function fadeAudioTo(audio, targetVolume, duration, pauseAtZero = false) {
+          if (!audio) return;
+          cancelAudioFade(audio);
+
+          const target = Math.max(0, Math.min(1, targetVolume));
+          if (target > 0 && audio.paused) safelyPlayAudio(audio);
+
+          if (pauseAtZero && audio.paused) {
+            audio.volume = 0;
+            audio.currentTime = 0;
+            return;
+          }
+
+          const startVolume = Number.isFinite(audio.volume) ? audio.volume : 0;
+          if (duration <= 0 || Math.abs(startVolume - target) < 0.001) {
+            audio.volume = target;
+            if (pauseAtZero && target === 0) {
+              audio.pause();
+              audio.currentTime = 0;
+            }
+            return;
+          }
+
+          const startedAt = performance.now();
+          const job = { rafId: 0 };
+          audioFadeJobs.set(audio, job);
+
+          const tick = (now) => {
+            if (audioFadeJobs.get(audio) !== job) return;
+
+            const progress = Math.min((now - startedAt) / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            audio.volume = startVolume + (target - startVolume) * eased;
+
+            if (progress < 1) {
+              job.rafId = requestAnimationFrame(tick);
+              return;
+            }
+
+            audioFadeJobs.delete(audio);
+            audio.volume = target;
+            if (pauseAtZero && target === 0) {
+              audio.pause();
+              audio.currentTime = 0;
+            }
+          };
+
+          job.rafId = requestAnimationFrame(tick);
+        }
+
+        function clearHornTimer() {
+          if (hornTimer !== null) {
+            clearTimeout(hornTimer);
+            hornTimer = null;
+          }
+        }
+
+        function scheduleNextHorn() {
+          clearHornTimer();
+          if (!portAudioMixes[currentPortAudioMode].horn) return;
+
+          const delay = 35000 + Math.random() * 20000;
+          hornTimer = setTimeout(() => {
+            const hornVolume = portAudioMixes[currentPortAudioMode].horn;
+            if (!hornVolume) return;
+
+            cancelAudioFade(hornAmbience);
+            hornAmbience.volume = hornVolume;
+            safelyPlayAudio(hornAmbience, true);
+            scheduleNextHorn();
+          }, delay);
+        }
+
+        function enableHorn(targetVolume, initial = false) {
+          clearHornTimer();
+          cancelAudioFade(hornAmbience);
+
+          if (hornAmbience.paused || hornAmbience.ended) {
+            hornAmbience.currentTime = 0;
+            hornAmbience.volume = initial ? 0 : targetVolume;
+            safelyPlayAudio(hornAmbience);
+          }
+
+          fadeAudioTo(hornAmbience, targetVolume, initial ? 900 : 550);
+          scheduleNextHorn();
+        }
+
+        function resumeCurrentPortAudio() {
+          const targets = portAudioMixes[currentPortAudioMode];
+
+          Object.entries(portAudioTracks).forEach(([name, audio]) => {
+            const target = targets[name] || 0;
+            if (!target || name === 'horn') return;
+
+            if (audio.paused) {
+              cancelAudioFade(audio);
+              audio.volume = target;
+              safelyPlayAudio(audio);
+            }
+          });
+
+          if (targets.horn) enableHorn(targets.horn);
+        }
+
+        function applyPortAudioMode(mode, initial = false) {
+          if (!portAudioMixes[mode]) return;
+
+          if (portAudioMixApplied && currentPortAudioMode === mode) {
+            resumeCurrentPortAudio();
+            return;
+          }
+
+          currentPortAudioMode = mode;
+          portAudioMixApplied = true;
+          const targets = portAudioMixes[mode];
+
+          Object.entries(portAudioTracks).forEach(([name, audio]) => {
+            const target = targets[name] || 0;
+
+            if (name === 'horn') {
+              if (target > 0) {
+                enableHorn(target, initial);
+              } else {
+                clearHornTimer();
+                fadeAudioTo(audio, 0, AUDIO_FADE_OUT_MS, true);
+              }
+              return;
+            }
+
+            if (target > 0) {
+              if (initial && audio.paused) audio.volume = 0;
+              if (audio.paused) safelyPlayAudio(audio);
+              fadeAudioTo(audio, target, initial ? 900 : 550);
+            } else {
+              fadeAudioTo(audio, 0, AUDIO_FADE_OUT_MS, true);
+            }
+          });
+        }
+
+        function unlockPortAudio() {
+          resumeCurrentPortAudio();
+          document.removeEventListener('pointerdown', unlockPortAudio, true);
+          document.removeEventListener('keydown', unlockPortAudio, true);
+        }
+
+        // 허용된 브라우저에서는 진입 즉시 재생하고, 차단되면 첫 입력에서 재시도합니다.
+        applyPortAudioMode('full', true);
+        document.addEventListener('pointerdown', unlockPortAudio, true);
+        document.addEventListener('keydown', unlockPortAudio, true);
 
         // 비디오 매끄러운 전환 함수
         function switchVideoSeamlessly(currentVid, nextVid, onComplete) {
@@ -351,6 +560,7 @@
         // 버튼 클릭 -> 두 번째 영상(port zoom) 재생
         if (playBtn) {
           playBtn.addEventListener('click', () => {
+            resumeCurrentPortAudio();
             overlay.classList.add('hidden');
             switchVideoSeamlessly(bgVideo, zoomVideo);
           });
@@ -371,6 +581,7 @@
         // 왼쪽 버튼 클릭 -> 두 원형 버튼 숨기기 & 다섯 번째 영상(port z to wall) 1회 재생
         if (leftBtn) {
           leftBtn.addEventListener('click', () => {
+            applyPortAudioMode('wall');
             if (leftBtn) leftBtn.classList.remove('visible');
             if (rightBtn) rightBtn.classList.remove('visible');
             switchVideoSeamlessly(villageVideo, wallVideo);
@@ -380,6 +591,7 @@
         // 오른쪽 버튼 클릭 -> 두 원형 버튼 숨기기 & 네 번째 영상(port z to shop) 1회 재생
         if (rightBtn) {
           rightBtn.addEventListener('click', () => {
+            applyPortAudioMode('shop');
             if (leftBtn) leftBtn.classList.remove('visible');
             if (rightBtn) rightBtn.classList.remove('visible');
             switchVideoSeamlessly(villageVideo, shopVideo);
