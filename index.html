@@ -37,11 +37,12 @@
     .hero-section { background-color: #000000; }
     .bg-video { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-    /* 첫 번째 비디오 섹션 좌측 상단 이미지 스타일 (제목) */
+    /* 첫 번째 비디오 섹션 상단 중앙 이미지 스타일 (제목) */
     .hero-image {
       position: absolute;
       top: 14px;
-      left: 550px;
+      left: 50%;
+      transform: translateX(-50%);
       width: 25vw;
       max-width: 650px;
       height: auto;
@@ -53,7 +54,7 @@
     @media (max-width: 768px) {
       .hero-image {
         top: 30px;
-        left: 30px;
+        left: 50%;
         width: 65vw;
       }
     }
@@ -272,7 +273,7 @@
   <div id="app-container">
     <!-- 1. 비디오 섹션 -->
     <section class="hero-section" id="heroSection">
-      <!-- 좌측 상단 이미지 -->
+      <!-- 상단 중앙 제목 이미지 -->
       <img class="hero-image" src="https://i.imgur.com/IBYsa77.png" alt="Header Overlay Visual">
 
       <video class="bg-video" autoplay loop muted playsinline>
@@ -314,7 +315,6 @@
 
         <div class="list-container" id="list">
           <div class="list-item" data-id="1">맑은 봄날의 피크닉</div>
-          <div class="list-item" data-id="2">눈부신 한낮의 수족관</div>
           <div class="list-item" data-id="3">해 질 녘의 골목길 북카페</div>
           <div class="list-item" data-id="4">바람 불어오는 한적한 포구</div>
           <div class="list-item" data-id="5">하얗게 눈 내리는 정원</div>
@@ -358,8 +358,6 @@
 
     const maskedCropImg = 'https://i.imgur.com/7E0yt7r.jpeg'; 
 
-  const maskedCropImg = 'https://i.imgur.com/7E0yt7r.jpeg'; 
-
     /* 스파이럴 기둥 카드 5장에 표시될 썸네일 이미지들 */
     const images = [
       maskedCropImg,
@@ -369,18 +367,16 @@
       'https://i.imgur.com/ccPDQhK.jpeg'
     ];
 
-    /* 각 카테고리 전환 트랜지션 시 확대 표시될 이미지들 */
     const expandImages = [
       'https://i.imgur.com/Uu0UXLG.png',
       'https://i.imgur.com/RbVuhtw.jpeg',
       'https://i.imgur.com/NfUBBVE.jpeg',
-      'https://i.imgur.com/hsFMulX.jpeg', // '하얗게 눈 내리는 정원' 전환용 이미지 적용
+      'https://i.imgur.com/4xMzMZm.jpeg',
       'https://i.imgur.com/lmnXmwm.jpeg'
     ];
 
     const pageUrls = [
       'picnic.html',
-      'waterfish.html',
       'bookcafe.html',
       'port.html',
       'winter.html',
@@ -389,7 +385,6 @@
 
     const dummyGradients = [
       'linear-gradient(135deg, #4a4e69, #22223b)',
-      'linear-gradient(135deg, #0984e3, #2d3436)',
       'linear-gradient(135deg, #fd79a8, #e84393)',
       'linear-gradient(135deg, #b2bec3, #636e72)',
       'linear-gradient(135deg, #e84118, #2f3640)',
@@ -415,6 +410,7 @@
     const minScroll = 0;
     const maxScroll = (totalSlots - 1) * yStep;
     const cards = [];
+
 
     function triggerMaskExpand(cardEl, expandImgUrl, targetUrl) {
       let centerX = window.innerWidth / 2;
