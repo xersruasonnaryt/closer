@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>늦은 밤 불 꺼진 내 방</title>
+  
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #000;
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    }
+
+    .video-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background-color: #000;
+    }
+
+    /* 비디오 공통 CSS 필터 및 GPU 하드웨어 가속 최적화 */
+    .fullscreen-video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 100%;
+      height: 100%;
+      object-fit: cover; 
+      transform: translate3d(-50%, -50%, 0);
+      will-change: opacity, transform;
+      filter: brightness(95%) contrast(105%) saturate(98%);
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      transform-style: preserve-3d;
+    }
+
+    /* 5번 비디오 (nightroom z to window.mp4) - 왼쪽 버튼 클릭 시 재생 */
+    #windowVideo {
+      z-index: 5;
+      opacity: 0;
+      display: none;
+      pointer-events: none;
+      transition: opacity 0.15s ease-in;
+    }
+
+    #windowVideo.fade-in {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* 4번 비디오 (nightroom z to phone.mp4) - 오른쪽 버튼 클릭 시 재생 */
+    #phoneVideo {
+      z-index: 4;
+      opacity: 0;
+      display: none;
+      pointer-events: none;
+      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    #phoneVideo.fade-in {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* 2번 비디오 (nightroom to zoom.mp4) */
+    #zoomVideo {
+      z-index: 3;
+      opacity: 1;
+      display: none;
+      transition: opacity 0.15s ease-out;
+    }
+
+    #zoomVideo.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* 3번 비디오 (nightroom zoom.mp4) */
+    .loop-video {
+      z-index: 2;
+      opacity: 1;
+      display: none;
+    }
+
+    /* 1번 기본 배경 비디오 (nightroom.mp4) */
+    #bgVideo {
+      z-index: 1;
+      opacity: 0;
+      transition: opacity 0.4s ease-out;
+    }
+
+    #bgVideo.ready {
+      opacity: 1;
+    }
+
+    #bgVideo.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* 1차 Click 버튼 위치 레이어 */
+    .content-overlay {
+      position: absolute;
+      z-index: 10;
+      pointer-events: none;
+      top: 85%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      opacity: 0;
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .content-overlay.visible {
+      opacity: 1;
+    }
+
+    .content-overlay.hidden {
+      opacity: 0;
+      transform: translate(-50%, -40%) scale(0.9);
+      pointer-events: none;
+    }
+
+    /* 타원형 Click 버튼 스타일 */
+    .pure-glass-btn {
+      pointer-events: auto;
+      width: 80px;  
+      height: 32px; 
+      border-radius: 20px;
+      font-family: 'Pretendard', sans-serif;
+      font-weight: 500;
+      font-size: 12.5px;
+      color: #ffffff;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+      letter-spacing: -0.2px;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      padding: 0;
+      position: relative;
+      background: radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.02) 55%, rgba(255, 255, 255, 0.08) 100%);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      box-shadow: 
+        0 0 10px rgba(255, 200, 220, 0.15), 
+        0 0 15px rgba(160, 230, 255, 0.15), 
+        2px 5px 12px rgba(0, 0, 0, 0.1), 
+        inset 1px 1px 1.5px rgba(255, 255, 255, 0.8), 
+        inset -1px -1.5px 4px rgba(255, 255, 255, 0.2);
+      cursor: pointer;
+      outline: none;
+      transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .pure-glass-btn::before {
+      content: '';
+      position: absolute;
+      top: -1px; left: -1px; right: -1px; bottom: -1px;
+      border-radius: 20px;
+      background: conic-gradient(
+        from 130deg at 50% 50%, 
+        rgba(255, 180, 210, 0.2) 0deg, 
+        rgba(255, 235, 170, 0.25) 70deg, 
+        rgba(150, 240, 210, 0.25) 150deg, 
+        rgba(140, 210, 255, 0.2) 230deg, 
+        rgba(220, 180, 255, 0.2) 300deg, 
+        rgba(255, 180, 210, 0.2) 360deg
+      );
+      -webkit-mask: radial-gradient(circle, transparent 60%, #000 70%);
+      mask: radial-gradient(circle, transparent 60%, #000 70%);
+      pointer-events: none;
+      opacity: 0.6;
+      filter: blur(1.5px);
+    }
+
+    .pure-glass-btn::after {
+      content: '';
+      position: absolute;
+      top: 8%; left: 12%;
+      width: 38%; height: 35%;
+      border-radius: 50%;
+      background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.15) 50%, transparent 80%);
+      transform: rotate(-15deg);
+      pointer-events: none;
+      filter: blur(0.5px);
+    }
+
+    .pure-glass-btn:hover {
+      transform: scale(1.05);
+      border-color: rgba(255, 255, 255, 0.6);
+      box-shadow: 
+        0 0 14px rgba(255, 180, 220, 0.25), 
+        0 0 20px rgba(150, 220, 255, 0.25), 
+        3px 8px 16px rgba(0, 0, 0, 0.12), 
+        inset 1px 1.5px 3px rgba(255, 255, 255, 0.9), 
+        inset -1px -2px 6px rgba(255, 255, 255, 0.3);
+    }
+
+    .pure-glass-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* 원형 버튼 공통 디자인 */
+    .pure-glass-circle-btn {
+      position: absolute;
+      z-index: 10;
+      pointer-events: none;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+
+      background: radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.04) 55%, rgba(255, 255, 255, 0.12) 100%);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      box-shadow: 
+        0 0 10px rgba(255, 200, 220, 0.2), 
+        0 0 14px rgba(160, 230, 255, 0.2), 
+        2px 5px 12px rgba(0, 0, 0, 0.12), 
+        inset 1px 1px 2px rgba(255, 255, 255, 0.85), 
+        inset -1px -1.5px 4px rgba(255, 255, 255, 0.25);
+
+      cursor: pointer;
+      outline: none;
+      opacity: 0;
+      transition: opacity 0.6s ease, transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), border-color 0.4s ease, box-shadow 0.4s ease;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .pure-glass-circle-btn.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .pure-glass-circle-btn.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #leftBtn {
+      top: 50%;
+      left: 34%;
+      transform: translate(-50%, -50%);
+    }
+
+    #rightBtn {
+      top: 79%;
+      left: 86%;
+      transform: translate(-50%, -50%);
+    }
+
+    .pure-glass-circle-btn::before {
+      content: '';
+      position: absolute;
+      top: -1px; left: -1px; right: -1px; bottom: -1px;
+      border-radius: 50%;
+      background: conic-gradient(
+        from 130deg at 50% 50%, 
+        rgba(255, 180, 210, 0.3) 0deg, 
+        rgba(255, 235, 170, 0.35) 70deg, 
+        rgba(150, 240, 210, 0.35) 150deg, 
+        rgba(140, 210, 255, 0.3) 230deg, 
+        rgba(220, 180, 255, 0.3) 300deg, 
+        rgba(255, 180, 210, 0.3) 360deg
+      );
+      -webkit-mask: radial-gradient(circle, transparent 55%, #000 68%);
+      mask: radial-gradient(circle, transparent 55%, #000 68%);
+      pointer-events: none;
+      opacity: 0.75;
+      filter: blur(1.2px);
+    }
+
+    .pure-glass-circle-btn::after {
+      content: '';
+      position: absolute;
+      top: 10%; left: 15%;
+      width: 40%; height: 38%;
+      border-radius: 50%;
+      background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.2) 50%, transparent 80%);
+      transform: rotate(-20deg);
+      pointer-events: none;
+      filter: blur(0.5px);
+    }
+
+    #leftBtn:hover, #rightBtn:hover {
+      transform: translate(-50%, -50%) scale(1.12);
+      border-color: rgba(255, 255, 255, 0.75);
+      box-shadow: 
+        0 0 14px rgba(255, 180, 220, 0.35), 
+        0 0 20px rgba(150, 220, 255, 0.35), 
+        3px 8px 16px rgba(0, 0, 0, 0.16), 
+        inset 1.5px 1.5px 3px rgba(255, 255, 255, 0.95), 
+        inset -1.5px -2px 5px rgba(255, 255, 255, 0.35);
+    }
+
+    #leftBtn:active, #rightBtn:active {
+      transform: translate(-50%, -50%) scale(0.92);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="video-container">
+    <video id="windowVideo" class="fullscreen-video" muted playsinline preload="auto">
+      <source src="nightroom z to window.mp4" type="video/mp4" />
+    </video>
+
+    <video id="phoneVideo" class="fullscreen-video" muted playsinline preload="auto">
+      <source src="nightroom z to phone.mp4" type="video/mp4" />
+    </video>
+
+    <video id="zoomVideo" class="fullscreen-video" muted playsinline preload="auto">
+      <source src="nightroom to zoom.mp4" type="video/mp4" />
+    </video>
+
+    <video id="loopVideo" class="fullscreen-video loop-video" loop muted playsinline preload="auto">
+      <source src="nightroom zoom.mp4" type="video/mp4" />
+    </video>
+
+    <video id="bgVideo" class="fullscreen-video" autoplay loop muted playsinline preload="auto">
+      <source src="nightroom.mp4" type="video/mp4" />
+      브라우저가 비디오 태그를 지원하지 않습니다.
+    </video>
+
+    <div class="content-overlay" id="overlay">
+      <button class="pure-glass-btn" id="playBtn" aria-label="버튼">
+        Click
+      </button>
+    </div>
+
+    <button class="pure-glass-circle-btn" id="leftBtn" aria-label="왼쪽 선택 버튼"></button>
+    <button class="pure-glass-circle-btn" id="rightBtn" aria-label="오른쪽 선택 버튼"></button>
+  </div>
+
+  <script>
+    const bgVideo = document.getElementById('bgVideo');
+    const zoomVideo = document.getElementById('zoomVideo');
+    const loopVideo = document.getElementById('loopVideo');
+    const phoneVideo = document.getElementById('phoneVideo');
+    const windowVideo = document.getElementById('windowVideo');
+    const playBtn = document.getElementById('playBtn');
+    const overlay = document.getElementById('overlay');
+    
+    const leftBtn = document.getElementById('leftBtn');
+    const rightBtn = document.getElementById('rightBtn');
+
+    let transitionTriggered = false;
+
+    function revealFirstVideo() {
+      bgVideo.classList.add('ready');
+      overlay.classList.add('visible');
+    }
+
+    if (bgVideo.readyState >= 3) {
+      revealFirstVideo();
+    } else {
+      bgVideo.addEventListener('playing', revealFirstVideo, { once: true });
+      bgVideo.addEventListener('loadeddata', revealFirstVideo, { once: true });
+    }
+
+    window.addEventListener('load', () => {
+      zoomVideo.load();
+      loopVideo.load();
+      phoneVideo.load();
+      windowVideo.load();
+    });
+
+    playBtn.addEventListener('click', () => {
+      overlay.classList.add('hidden');
+      overlay.classList.remove('visible');
+
+      zoomVideo.style.display = 'block';
+      zoomVideo.currentTime = 0;
+      const playPromise = zoomVideo.play();
+
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          setTimeout(() => {
+            bgVideo.classList.add('fade-out');
+          }, 50);
+        });
+      }
+    });
+
+    function handleZoomEnd() {
+      if (!transitionTriggered) {
+        transitionTriggered = true;
+        
+        loopVideo.style.display = 'block';
+        loopVideo.currentTime = 0;
+        loopVideo.play().then(() => {
+          zoomVideo.classList.add('fade-out');
+          setTimeout(() => {
+            zoomVideo.style.display = 'none';
+          }, 150);
+        }).catch(e => {
+          zoomVideo.classList.add('fade-out');
+        });
+
+        setTimeout(() => {
+          leftBtn.classList.add('visible');
+          rightBtn.classList.add('visible');
+        }, 300);
+      }
+    }
+
+    zoomVideo.addEventListener('timeupdate', () => {
+      if (zoomVideo.duration && (zoomVideo.duration - zoomVideo.currentTime <= 0.15)) {
+        handleZoomEnd();
+      }
+    });
+
+    zoomVideo.addEventListener('ended', () => {
+      handleZoomEnd();
+    });
+
+    // 왼쪽 버튼 클릭 시 -> nightroom z to window.mp4 전환 (프레임 튐 방지 처리)
+    leftBtn.addEventListener('click', () => {
+      leftBtn.classList.remove('visible');
+      rightBtn.classList.remove('visible');
+      leftBtn.classList.add('fade-out');
+      rightBtn.classList.add('fade-out');
+
+      windowVideo.style.display = 'block';
+      windowVideo.currentTime = 0;
+
+      windowVideo.play().then(() => {
+        requestAnimationFrame(() => {
+          windowVideo.classList.add('fade-in');
+          setTimeout(() => {
+            loopVideo.style.display = 'none';
+            loopVideo.pause();
+          }, 150);
+        });
+      }).catch(e => console.log(e));
+    });
+
+    // 오른쪽 버튼 클릭 시 -> nightroom z to phone.mp4 재생
+    rightBtn.addEventListener('click', () => {
+      leftBtn.classList.remove('visible');
+      rightBtn.classList.remove('visible');
+      leftBtn.classList.add('fade-out');
+      rightBtn.classList.add('fade-out');
+
+      phoneVideo.style.display = 'block';
+      phoneVideo.currentTime = 0;
+
+      phoneVideo.play().then(() => {
+        requestAnimationFrame(() => {
+          phoneVideo.classList.add('fade-in');
+          setTimeout(() => {
+            loopVideo.style.display = 'none';
+            loopVideo.pause();
+          }, 300);
+        });
+      }).catch(e => console.log(e));
+    });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>해 질 녘 골목길 북카페</title>
+  
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #000;
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    }
+
+    .video-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background-color: #000;
+    }
+
+    /* 모든 비디오 및 배경 이미지 공통 레이아웃 */
+    .fullscreen-video,
+    .fullscreen-image {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 100%;
+      height: 100%;
+      object-fit: cover; 
+      transform: translate(-50%, -50%) scale(1.001);
+      transform-origin: center center;
+      will-change: opacity, visibility;
+      filter: brightness(98%) contrast(102%) saturate(102%);
+      background: transparent;
+      
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.35s ease-out;
+    }
+
+    /* cakeVideo 및 cakeBgImage 전환 시 잔상/검은 화면 완벽 차단 CSS */
+    #cakeVideo {
+      transition: none !important;
+    }
+    
+    #cakeBgImage {
+      transition: none !important; /* 이미지 전환 트랜지션을 제거하여 즉시 노출 */
+    }
+
+    /* 활성화된 비디오/이미지 */
+    .fullscreen-video.active,
+    .fullscreen-image.active {
+      opacity: 1 !important;
+      visibility: visible !important;
+    }
+
+    /* 레이어 계층 구조 정의 (cakeBgImage를 cakeVideo 바로 밑에 배치) */
+    #bgVideo { z-index: 1; }
+    #zoomVideo { z-index: 2; }
+    #flowerVideo { z-index: 3; }
+    #cakeBgImage { z-index: 4; }
+    #cakeVideo { z-index: 5; }
+
+    /* 하단 메인 시작 버튼 컨테이너 */
+    .content-overlay {
+      position: absolute;
+      z-index: 20;
+      pointer-events: none;
+      top: 85%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .content-overlay.hidden {
+      opacity: 0;
+      transform: translate(-50%, -40%) scale(0.9);
+      pointer-events: none;
+    }
+
+    /* 맑고 투명한 파스텔 글래스모피즘 버튼 */
+    .pure-glass-btn {
+      pointer-events: auto;
+      width: 80px;
+      height: 32px;
+      border-radius: 20px;
+      font-family: 'Pretendard', sans-serif;
+      font-weight: 500;
+      font-size: 12.5px;
+      color: #ffffff;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+      letter-spacing: -0.2px;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      padding: 0;
+      position: relative;
+
+      background: radial-gradient(
+        circle at 35% 25%,
+        rgba(255, 255, 255, 0.18) 0%,
+        rgba(255, 255, 255, 0.02) 55%,
+        rgba(255, 255, 255, 0.08) 100%
+      );
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      box-shadow: 
+        0 0 10px rgba(255, 200, 220, 0.15), 
+        0 0 15px rgba(160, 230, 255, 0.15), 
+        2px 5px 12px rgba(0, 0, 0, 0.1), 
+        inset 1px 1px 1.5px rgba(255, 255, 255, 0.8), 
+        inset -1px -1.5px 4px rgba(255, 255, 255, 0.2);
+
+      cursor: pointer;
+      outline: none;
+      transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .pure-glass-btn::before {
+      content: '';
+      position: absolute;
+      top: -1px; left: -1px; right: -1px; bottom: -1px;
+      border-radius: 20px;
+      background: conic-gradient(
+        from 130deg at 50% 50%, 
+        rgba(255, 180, 210, 0.2) 0deg, 
+        rgba(255, 235, 170, 0.25) 70deg, 
+        rgba(150, 240, 210, 0.25) 150deg, 
+        rgba(140, 210, 255, 0.2) 230deg, 
+        rgba(220, 180, 255, 0.2) 300deg, 
+        rgba(255, 180, 210, 0.2) 360deg
+      );
+      -webkit-mask: radial-gradient(circle, transparent 60%, #000 70%);
+      mask: radial-gradient(circle, transparent 60%, #000 70%);
+      pointer-events: none;
+      opacity: 0.6;
+      filter: blur(1.5px);
+    }
+
+    .pure-glass-btn::after {
+      content: '';
+      position: absolute;
+      top: 8%; left: 12%;
+      width: 38%; height: 35%;
+      border-radius: 50%;
+      background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.15) 50%, transparent 80%);
+      transform: rotate(-15deg);
+      pointer-events: none;
+      filter: blur(0.5px);
+    }
+
+    .pure-glass-btn:hover {
+      transform: scale(1.05);
+      border-color: rgba(255, 255, 255, 0.6);
+      box-shadow: 
+        0 0 14px rgba(255, 180, 220, 0.25), 
+        0 0 20px rgba(150, 220, 255, 0.25), 
+        3px 8px 16px rgba(0, 0, 0, 0.12), 
+        inset 1px 1.5px 3px rgba(255, 255, 255, 0.9), 
+        inset -1px -2px 6px rgba(255, 255, 255, 0.3);
+    }
+
+    .pure-glass-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* 여리한 홀로그램 글래스모피즘 원형 버튼 스타일 */
+    .action-glass-btn {
+      position: absolute;
+      z-index: 20;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      outline: none;
+      user-select: none;
+      opacity: 0;
+      pointer-events: none;
+      
+      backdrop-filter: blur(14px) saturate(140%);
+      -webkit-backdrop-filter: blur(14px) saturate(140%);
+
+      background: radial-gradient(
+        circle at 30% 20%,
+        rgba(255, 225, 235, 0.38) 0%,
+        rgba(215, 240, 255, 0.18) 45%,
+        rgba(255, 255, 255, 0.05) 75%,
+        rgba(255, 210, 240, 0.12) 100%
+      );
+
+      border: 1px solid rgba(255, 255, 255, 0.45);
+
+      box-shadow: 
+        0 0 14px rgba(255, 215, 230, 0.28),
+        0 0 22px rgba(180, 235, 255, 0.22),
+        0 6px 16px rgba(0, 0, 0, 0.25),
+        inset 1.2px 1.5px 2px rgba(255, 255, 255, 0.9),
+        inset -1.5px -2.5px 4px rgba(255, 200, 230, 0.3);
+
+      transform: translate(-50%, -50%) scale(0.8);
+      transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.25, 1, 0.5, 1), background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+    }
+
+    .action-glass-btn.visible {
+      opacity: 0.88;
+      pointer-events: auto;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .action-glass-btn:hover {
+      opacity: 1 !important;
+      transform: translate(-50%, -50%) scale(1.18) !important;
+      border-color: rgba(255, 255, 255, 0.75);
+
+      background: radial-gradient(
+        circle at 30% 20%,
+        rgba(255, 230, 242, 0.55) 0%,
+        rgba(200, 242, 255, 0.3) 50%,
+        rgba(255, 255, 255, 0.12) 80%,
+        rgba(240, 210, 255, 0.25) 100%
+      );
+
+      box-shadow: 
+        0 0 20px rgba(255, 205, 225, 0.5),
+        0 0 30px rgba(175, 235, 255, 0.4),
+        0 8px 24px rgba(0, 0, 0, 0.3),
+        inset 1.5px 2px 3px rgba(255, 255, 255, 1),
+        inset -2px -2.5px 6px rgba(255, 180, 220, 0.45);
+    }
+
+    .action-glass-btn:active {
+      transform: translate(-50%, -50%) scale(0.92) !important;
+    }
+
+    #windowBtn {
+      top: 50%;
+      left: 22%;
+    }
+
+    #showcaseBtn {
+      top: 55%;
+      left: 78%;
+    }
+
+    /* 홈 버튼 */
+    .home-glass-btn {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      z-index: 50;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.05) 60%, rgba(255, 255, 255, 0.15) 100%);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      box-shadow: 
+        0 0 12px rgba(255, 255, 255, 0.2),
+        2px 6px 14px rgba(0, 0, 0, 0.15), 
+        inset 1px 1px 2px rgba(255, 255, 255, 0.8), 
+        inset -1px -1px 4px rgba(255, 255, 255, 0.2);
+      cursor: pointer;
+      outline: none;
+      transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+      pointer-events: auto;
+    }
+
+    .home-glass-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: #ffffff;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+      transition: transform 0.3s ease;
+    }
+
+    .home-glass-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 
+        0 0 16px rgba(255, 255, 255, 0.4),
+        4px 8px 20px rgba(0, 0, 0, 0.2),
+        inset 1px 1.5px 3px rgba(255, 255, 255, 0.95);
+    }
+
+    .home-glass-btn:hover svg {
+      transform: scale(1.08);
+    }
+
+    .home-glass-btn:active {
+      transform: scale(0.92);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="video-container">
+    <button id="homeBtn" class="home-glass-btn" aria-label="메인 화면 세 번째 섹션으로 이동">
+      <svg viewBox="0 0 24 24">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+      </svg>
+    </button>
+
+    <img id="cakeBgImage" class="fullscreen-image" src="https://i.imgur.com/StHhZqI.jpeg" alt="케이크 배경 이미지" />
+
+    <video id="cakeVideo" class="fullscreen-video" muted playsinline preload="auto">
+      <source src="bookcafe z to cake.mp4" type="video/mp4" />
+    </video>
+
+    <video id="flowerVideo" class="fullscreen-video" muted playsinline preload="auto">
+      <source src="bookcafe z to flower.mp4" type="video/mp4" />
+    </video>
+
+    <video id="zoomVideo" class="fullscreen-video" muted playsinline preload="auto">
+      <source src="bookcafe to zoom.mp4" type="video/mp4" />
+    </video>
+
+    <video id="bgVideo" class="fullscreen-video active" autoplay loop muted playsinline preload="auto">
+      <source src="bookcafe.mp4" type="video/mp4" />
+      브라우저가 비디오 태그를 지원하지 않습니다.
+    </video>
+
+    <div class="content-overlay" id="overlay">
+      <button class="pure-glass-btn" id="playBtn" aria-label="재생 버튼">
+        Click
+      </button>
+    </div>
+
+    <button class="action-glass-btn" id="windowBtn" aria-label="창가 자리"></button>
+    <button class="action-glass-btn" id="showcaseBtn" aria-label="쇼케이스"></button>
+  </div>
+
+  <script>
+    const bgVideo = document.getElementById('bgVideo');
+    const zoomVideo = document.getElementById('zoomVideo');
+    const flowerVideo = document.getElementById('flowerVideo');
+    const cakeVideo = document.getElementById('cakeVideo');
+    const cakeBgImage = document.getElementById('cakeBgImage');
+    
+    const playBtn = document.getElementById('playBtn');
+    const overlay = document.getElementById('overlay');
+    const windowBtn = document.getElementById('windowBtn');
+    const showcaseBtn = document.getElementById('showcaseBtn');
+    const homeBtn = document.getElementById('homeBtn');
+
+    const videos = [bgVideo, zoomVideo, flowerVideo, cakeVideo];
+    videos.forEach(v => v.load());
+
+    function switchVideoSeamlessly(currentEl, nextVideo, onEndedCallback) {
+      nextVideo.currentTime = 0;
+
+      const triggerSeamlessTransition = () => {
+        requestAnimationFrame(() => {
+          nextVideo.classList.add('active');
+          setTimeout(() => {
+            if (currentEl) {
+              currentEl.classList.remove('active');
+              if (currentEl.tagName === 'VIDEO') {
+                currentEl.pause();
+              }
+            }
+          }, 300);
+        });
+      };
+
+      const onTimeUpdate = () => {
+        if (nextVideo.currentTime > 0) {
+          nextVideo.removeEventListener('timeupdate', onTimeUpdate);
+          triggerSeamlessTransition();
+        }
+      };
+
+      nextVideo.addEventListener('timeupdate', onTimeUpdate);
+
+      const playPromise = nextVideo.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(err => {
+          console.error("비디오 재생 오류:", err);
+          nextVideo.classList.add('active');
+          if (currentEl) currentEl.classList.remove('active');
+        });
+      }
+
+      if (onEndedCallback) {
+        const handleEnded = () => {
+          nextVideo.removeEventListener('ended', handleEnded);
+          onEndedCallback();
+        };
+        nextVideo.addEventListener('ended', handleEnded);
+      }
+    }
+
+    playBtn.addEventListener('click', () => {
+      overlay.classList.add('hidden');
+      switchVideoSeamlessly(bgVideo, zoomVideo, () => {
+        windowBtn.classList.add('visible');
+        showcaseBtn.classList.add('visible');
+      });
+    });
+
+    windowBtn.addEventListener('click', () => {
+      windowBtn.classList.remove('visible');
+      showcaseBtn.classList.remove('visible');
+      switchVideoSeamlessly(zoomVideo, flowerVideo, () => {
+        flowerVideo.pause();
+      });
+    });
+
+    // 쇼케이스 클릭 시 초기화
+    let isCakeTransitionDone = false;
+
+    showcaseBtn.addEventListener('click', () => {
+      windowBtn.classList.remove('visible');
+      showcaseBtn.classList.remove('visible');
+
+      isCakeTransitionDone = false;
+      cakeBgImage.classList.remove('active');
+      switchVideoSeamlessly(zoomVideo, cakeVideo, null);
+    });
+
+    // 💡 핵심 로직: 비디오가 검은 화면으로 넘어가기 직전(종료 0.15초 전)에 일시정지시키고,
+    // 이미지를 트랜지션 없이 '즉시' 활성화하여 완벽한 시각적 연결을 보장합니다.
+    cakeVideo.addEventListener('timeupdate', () => {
+      if (isCakeTransitionDone || !cakeVideo.duration) return;
+
+      // 영상 끝나기 0.15초 전 시점 감지
+      if (cakeVideo.currentTime >= cakeVideo.duration - 0.15) {
+        isCakeTransitionDone = true;
+        
+        // 1. 영상 재생 정지 (마지막 프레임을 브라우저에 렌더링 유지)
+        cakeVideo.pause();
+
+        // 2. 배경 이미지 즉시 표시 (CSS의 transition: none 덕분에 딜레이 없음)
+        cakeBgImage.classList.add('active');
+
+        // 3. 이미지가 이미 화면에 표시된 후 안전하게 비디오 감추기
+        requestAnimationFrame(() => {
+          cakeVideo.classList.remove('active');
+        });
+      }
+    });
+
+    homeBtn.addEventListener('click', () => {
+      window.location.href = 'new main.html#section3';
+    });
+  </script>
+
+</body>
+</html>
