@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>봄날의 피크닉</title>
+  
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #000;
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    }
+
+    .video-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .fullscreen-video {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 100%;
+      height: 100%;
+      object-fit: cover; 
+      transform: translate(-50%, -50%);
+      will-change: opacity, transform;
+      filter: contrast(102%) brightness(99%) saturate(102%);
+      
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    .fullscreen-video.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* 레이어 순서 */
+    #bgVideo { z-index: 1; }
+    #zoomTransitionVideo { z-index: 2; }
+    #zoomLoopVideo { z-index: 3; }
+    #flowerVideo { z-index: 4; }
+    #flowerLoopVideo { z-index: 5; }
+    #fishVideo { z-index: 6; }
+    #fishLoopVideo { z-index: 7; }
+
+    /* 글래스 렌즈 버튼 */
+    .glass-lens-btn {
+      position: absolute;
+      z-index: 20;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: none;
+      pointer-events: auto;
+      border: none;
+      outline: none;
+      
+      background: radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 75%);
+      backdrop-filter: blur(2px) saturate(240%) brightness(120%) contrast(115%);
+      -webkit-backdrop-filter: blur(2px) saturate(240%) brightness(120%) contrast(115%);
+      
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      box-shadow: 
+        0 4px 12px rgba(0, 0, 0, 0.05),
+        inset 1px 1px 1.5px rgba(255, 255, 255, 0.75),
+        inset -1px -1px 3px rgba(255, 255, 255, 0.15);
+
+      transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), border-color 0.4s ease, box-shadow 0.4s ease;
+      transform: translate(-50%, -50%);
+    }
+
+    .glass-lens-btn.visible {
+      display: block;
+    }
+
+    .glass-lens-btn::before {
+      content: '';
+      position: absolute;
+      top: 6%; left: 12%;
+      width: 45%; height: 35%;
+      border-radius: 50%;
+      background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0) 80%);
+      transform: rotate(-25deg);
+      pointer-events: none;
+    }
+
+    .glass-lens-btn::after {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 100%; height: 100%;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      animation: crystalPulse 3s infinite ease-out;
+      pointer-events: none;
+    }
+
+    .glass-lens-btn:hover {
+      transform: translate(-50%, -50%) scale(1.15);
+      border-color: rgba(255, 255, 255, 0.55);
+      backdrop-filter: blur(1px) saturate(280%) brightness(130%) contrast(125%);
+      -webkit-backdrop-filter: blur(1px) saturate(280%) brightness(130%) contrast(125%);
+      box-shadow: 
+        0 6px 16px rgba(0, 0, 0, 0.08),
+        0 0 14px rgba(255, 255, 255, 0.35),
+        inset 1.2px 1.2px 2px rgba(255, 255, 255, 0.95),
+        inset -1px -1px 4px rgba(255, 255, 255, 0.25);
+    }
+
+    .glass-lens-btn:active {
+      transform: translate(-50%, -50%) scale(0.92);
+    }
+
+    #flowerPointBtn {
+      top: 32%;
+      left: 24%;
+    }
+
+    #riverPointBtn {
+      top: 72%;
+      left: 78%;
+    }
+
+    @keyframes crystalPulse {
+      0% {
+        width: 100%; height: 100%;
+        opacity: 0.65;
+        box-shadow: 0 0 4px rgba(255, 255, 255, 0.3);
+      }
+      50% { opacity: 0.2; }
+      100% {
+        width: 240%; height: 240%;
+        opacity: 0;
+        box-shadow: 0 0 12px rgba(255, 255, 255, 0);
+      }
+    }
+
+    /* ★ Click 위치 조절 레이어 ★ */
+    .content-overlay {
+      position: absolute;
+      z-index: 30; 
+      pointer-events: none;
+      top: 80%; /* 필요 시 위치 조정 (예: 75%, 500px 등) */
+      left: 50%;
+      transform: translate(-50%, -50%);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .content-overlay.hidden {
+      opacity: 0;
+      transform: translate(-50%, -40%) scale(0.9);
+      pointer-events: none;
+    }
+
+    /* 맑고 투명한 파스텔 글래스모피즘 버튼 */
+    .pure-glass-btn {
+      pointer-events: auto;
+      width: 80px; /* 요청하신 너비 */
+      height: 32px; /* 요청하신 높이 */
+      border-radius: 20px;
+      font-family: 'Pretendard', sans-serif;
+      font-weight: 500; 
+      font-size: 12.5px;
+      color: #ffffff;      
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25); 
+      letter-spacing: -0.2px;
+      display: inline-flex; 
+      justify-content: center; 
+      align-items: center;
+      padding: 0;
+      position: relative;
+
+      /* 투명도 높인 은은한 배경 */
+      background: radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.02) 55%, rgba(255, 255, 255, 0.08) 100%);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      box-shadow: 
+        0 0 10px rgba(255, 200, 220, 0.15), 
+        0 0 15px rgba(160, 230, 255, 0.15), 
+        2px 5px 12px rgba(0, 0, 0, 0.1), 
+        inset 1px 1px 1.5px rgba(255, 255, 255, 0.8), 
+        inset -1px -1.5px 4px rgba(255, 255, 255, 0.2);
+
+      cursor: pointer; 
+      outline: none;
+      transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+      overflow: hidden; 
+      user-select: none;
+    }
+
+    /* 좌우 파스텔 톤 테두리 빛 (투명하게 수정) */
+    .pure-glass-btn::before {
+      content: '';
+      position: absolute;
+      top: -1px; left: -1px; right: -1px; bottom: -1px;
+      border-radius: 20px;
+      background: conic-gradient(
+        from 130deg at 50% 50%, 
+        rgba(255, 180, 210, 0.2) 0deg, 
+        rgba(255, 235, 170, 0.25) 70deg, 
+        rgba(150, 240, 210, 0.25) 150deg, 
+        rgba(140, 210, 255, 0.2) 230deg, 
+        rgba(220, 180, 255, 0.2) 300deg, 
+        rgba(255, 180, 210, 0.2) 360deg
+      );
+      -webkit-mask: radial-gradient(circle, transparent 60%, #000 70%);
+      mask: radial-gradient(circle, transparent 60%, #000 70%);
+      pointer-events: none; 
+      opacity: 0.6;
+      filter: blur(1.5px);
+    }
+
+    /* 상단 유리 반사 하이라이트 */
+    .pure-glass-btn::after {
+      content: '';
+      position: absolute;
+      top: 8%; left: 12%;
+      width: 38%; height: 35%;
+      border-radius: 50%;
+      background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.15) 50%, transparent 80%);
+      transform: rotate(-15deg);
+      pointer-events: none; 
+      filter: blur(0.5px);
+    }
+
+    .pure-glass-btn:hover {
+      transform: scale(1.05);
+      border-color: rgba(255, 255, 255, 0.6);
+      box-shadow: 
+        0 0 14px rgba(255, 180, 220, 0.25), 
+        0 0 20px rgba(150, 220, 255, 0.25), 
+        3px 8px 16px rgba(0, 0, 0, 0.12), 
+        inset 1px 1.5px 3px rgba(255, 255, 255, 0.9), 
+        inset -1px -2px 6px rgba(255, 255, 255, 0.3);
+    }
+
+    .pure-glass-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* 우측 상단 글래스모피즘 홈 버튼 */
+    .home-glass-btn {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      z-index: 50;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.05) 60%, rgba(255, 255, 255, 0.15) 100%);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      box-shadow: 
+        0 0 12px rgba(255, 255, 255, 0.2),
+        2px 6px 14px rgba(0, 0, 0, 0.15), 
+        inset 1px 1px 2px rgba(255, 255, 255, 0.8), 
+        inset -1px -1px 4px rgba(255, 255, 255, 0.2);
+      cursor: pointer;
+      outline: none;
+      transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+      pointer-events: auto;
+    }
+
+    .home-glass-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: #ffffff;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+      transition: transform 0.3s ease;
+    }
+
+    .home-glass-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 
+        0 0 16px rgba(255, 255, 255, 0.4),
+        4px 8px 20px rgba(0, 0, 0, 0.2),
+        inset 1px 1.5px 3px rgba(255, 255, 255, 0.95);
+    }
+
+    .home-glass-btn:hover svg {
+      transform: scale(1.08);
+    }
+
+    .home-glass-btn:active {
+      transform: scale(0.92);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="video-container">
+    <!-- 홈 버튼 (클릭 시 new main.html#section3 으로 이동) -->
+    <button id="homeBtn" class="home-glass-btn" aria-label="메인 화면 세 번째 섹션으로 이동">
+      <svg viewBox="0 0 24 24">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+      </svg>
+    </button>
+
+    <video id="bgVideo" class="fullscreen-video active" autoplay loop muted playsinline preload="auto">
+      <source src="picnic.mp4" type="video/mp4" />
+    </video>
+
+    <video id="zoomTransitionVideo" class="fullscreen-video" muted playsinline preload="auto">
+      <source src="picnic to zoom.mp4" type="video/mp4" />
+    </video>
+
+    <video id="zoomLoopVideo" class="fullscreen-video" loop muted playsinline preload="auto">
+      <source src="picnic zoom.mp4" type="video/mp4" />
+    </video>
+
+    <video id="flowerVideo" class="fullscreen-video" muted playsinline preload="auto">
+      <source src="picnic z to flower.mp4" type="video/mp4" />
+    </video>
+
+    <video id="flowerLoopVideo" class="fullscreen-video" loop muted playsinline preload="auto">
+      <source src="picnic flower.mp4" type="video/mp4" />
+    </video>
+
+    <video id="fishVideo" class="fullscreen-video" muted playsinline preload="auto">
+      <source src="picnic z to fish.mp4" type="video/mp4" />
+    </video>
+
+    <video id="fishLoopVideo" class="fullscreen-video" loop muted playsinline preload="auto">
+      <source src="picnic fish.mp4" type="video/mp4" />
+    </video>
+
+    <button id="flowerPointBtn" class="glass-lens-btn" aria-label="꽃과 나비 포인트"></button>
+    <button id="riverPointBtn" class="glass-lens-btn" aria-label="강가 포인트"></button>
+
+    <div class="content-overlay" id="overlay">
+      <button class="pure-glass-btn" id="playBtn" aria-label="재생 버튼">
+        Click
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const bgVideo = document.getElementById('bgVideo');
+    const zoomTransition = document.getElementById('zoomTransitionVideo');
+    const zoomLoop = document.getElementById('zoomLoopVideo');
+    const flowerVideo = document.getElementById('flowerVideo');
+    const flowerLoop = document.getElementById('flowerLoopVideo');
+    const fishVideo = document.getElementById('fishVideo');
+    const fishLoop = document.getElementById('fishLoopVideo');
+    
+    const flowerPointBtn = document.getElementById('flowerPointBtn');
+    const riverPointBtn = document.getElementById('riverPointBtn');
+    const playBtn = document.getElementById('playBtn');
+    const overlay = document.getElementById('overlay');
+    const homeBtn = document.getElementById('homeBtn');
+
+    // 모든 비디오 사전에 로딩 보장
+    const allVideos = [bgVideo, zoomTransition, zoomLoop, flowerVideo, flowerLoop, fishVideo, fishLoop];
+    allVideos.forEach(vid => vid.load());
+
+    // 심리스 비디오 전환 핵심 함수 (검은 프레임 타파)
+    function switchVideoSeamlessly(currentVid, nextVid, onEndedCallback) {
+      nextVid.currentTime = 0;
+
+      const onPlaying = () => {
+        nextVid.removeEventListener('playing', onPlaying);
+        nextVid.classList.add('active');
+
+        setTimeout(() => {
+          currentVid.classList.remove('active');
+          currentVid.pause();
+        }, 300);
+      };
+
+      nextVid.addEventListener('playing', onPlaying);
+
+      const playPromise = nextVid.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          nextVid.classList.add('active');
+          currentVid.classList.remove('active');
+          currentVid.pause();
+        });
+      }
+
+      if (onEndedCallback) {
+        const handleEnded = () => {
+          nextVid.removeEventListener('ended', handleEnded);
+          onEndedCallback();
+        };
+        nextVid.addEventListener('ended', handleEnded);
+      }
+    }
+
+    // [1단계] 중앙 재생 버튼 클릭 -> 2번 재생 후 3번 루프 전환
+    playBtn.addEventListener('click', () => {
+      overlay.classList.add('hidden');
+      
+      switchVideoSeamlessly(bgVideo, zoomTransition, () => {
+        switchVideoSeamlessly(zoomTransition, zoomLoop, null);
+        flowerPointBtn.classList.add('visible');
+        riverPointBtn.classList.add('visible');
+      });
+    });
+
+    // [포인트 1] 꽃과 나비 버튼
+    flowerPointBtn.addEventListener('click', () => {
+      flowerPointBtn.classList.remove('visible');
+      riverPointBtn.classList.remove('visible');
+
+      switchVideoSeamlessly(zoomLoop, flowerVideo, () => {
+        switchVideoSeamlessly(flowerVideo, flowerLoop, null);
+      });
+    });
+
+    // [포인트 2] 강가 버튼
+    riverPointBtn.addEventListener('click', () => {
+      flowerPointBtn.classList.remove('visible');
+      riverPointBtn.classList.remove('visible');
+
+      switchVideoSeamlessly(zoomLoop, fishVideo, () => {
+        fishLoop.playbackRate = 1.25;
+        switchVideoSeamlessly(fishVideo, fishLoop, null);
+      });
+    });
+
+    // [홈 버튼] 클릭 시 'new main.html'의 세 번째 섹션으로 이동
+    homeBtn.addEventListener('click', () => {
+      window.location.href = 'new main.html#section3';
+    });
+  </script>
+
+</body>
+</html>
