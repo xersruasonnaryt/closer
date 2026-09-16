@@ -404,6 +404,7 @@
     const btnList = document.getElementById('btn-list');
 
     let currentView = 'spiral';
+    let isNavigatingToDetail = false;
     const totalTurns = 3;
     const totalSlots = images.length * totalTurns;
     const radius = 460;
@@ -414,77 +415,6 @@
     const maxScroll = (totalSlots - 1) * yStep;
     const cards = [];
 
-    let preloadedPicnicHTML = null;
-
-    function preloadPageAndResources(url) {
-      fetch(url)
-        .then(res => res.text())
-        .then(html => {
-          preloadedPicnicHTML = html;
-
-          const parser = new DOMParser();
-          const parsedDoc = parser.parseFromString(html, 'text/html');
-          const imgElements = parsedDoc.querySelectorAll('img');
-
-          imgElements.forEach(imgEl => {
-            if (imgEl.src) {
-              const img = new Image();
-              img.src = imgEl.src;
-            }
-          });
-        })
-        .catch(err => console.error("사전 로드 실패:", err));
-    }
-
-    preloadPageAndResources(pageUrls[0]);
-
-    // 💡 동적 페이지 전환 및 비디오 재생 제어 함수 보완
-    function applyLoadedPage(htmlText, url) {
-      const parser = new DOMParser();
-      const newDoc = parser.parseFromString(htmlText, 'text/html');
-      
-      const appContainer = document.getElementById('app-container');
-      const newAppContent = newDoc.querySelector('#app-container') || newDoc.body;
-      
-      appContainer.innerHTML = newAppContent.innerHTML;
-      window.scrollTo(0, 0);
-
-      // 삽입된 HTML 내의 모든 동영상 요소를 강제 초기화 및 즉시 재생
-      const newVideos = appContainer.querySelectorAll('video');
-      newVideos.forEach(video => {
-        video.load();
-        if (video.hasAttribute('autoplay') || video.classList.contains('active')) {
-          const playPromise = video.play();
-          if (playPromise !== undefined) {
-            playPromise.catch(e => console.log("비디오 재생 대기:", e));
-          }
-        }
-      });
-
-      // 스크립트 실행 동적 바인딩
-      const scripts = appContainer.querySelectorAll('script');
-      scripts.forEach(oldScript => {
-        const newScript = document.createElement('script');
-        Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-        newScript.appendChild(document.createTextNode(oldScript.innerHTML));
-        oldScript.parentNode.replaceChild(newScript, oldScript);
-      });
-
-      history.pushState(null, '', url);
-
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          gsap.to(transitionOverlay, {
-            opacity: 0,
-            duration: 0.35,
-            ease: "power1.out",
-            onComplete: () => {
-              transitionOverlay.style.setProperty('--mask-size', `0%`);
-            }
-          });
-        });
-      });
-    }
 
     function triggerMaskExpand(cardEl, expandImgUrl, targetUrl) {
       let centerX = window.innerWidth / 2;
@@ -519,14 +449,9 @@
           transitionOverlay.style.setProperty('--mask-size', `${maskObj.size}%`);
         },
         onComplete: () => {
-          if (targetUrl === pageUrls[0] && preloadedPicnicHTML) {
-            applyLoadedPage(preloadedPicnicHTML, targetUrl);
-          } else {
-            fetch(targetUrl)
-              .then(res => res.text())
-              .then(html => applyLoadedPage(html, targetUrl))
-              .catch(() => { window.location.href = targetUrl; });
-          }
+          // 상세 페이지는 자체 <head> 스타일과 스크립트를 함께 로드해야 한다.
+          // 본문만 교체하면 전환 이미지가 남고 비디오 초기화가 실행되지 않는다.
+          window.location.assign(targetUrl);
         }
       });
 
@@ -541,6 +466,9 @@
     }
 
     function navigateToDetail(index, cardEl) {
+      if (isNavigatingToDetail) return;
+      isNavigatingToDetail = true;
+
       const imgIndex = index % images.length;
       const targetUrl = pageUrls[imgIndex];
       const expandImgUrl = expandImages[imgIndex];
@@ -585,6 +513,15 @@
 
     document.querySelectorAll('.list-item').forEach((item, index) => {
       item.addEventListener('click', () => { navigateToDetail(index, null); });
+    });
+
+    // 뒤로가기로 메인 화면이 복원될 때 전환 이미지를 남기지 않는다.
+    window.addEventListener('pageshow', () => {
+      isNavigatingToDetail = false;
+      gsap.killTweensOf(transitionOverlay);
+      gsap.set(transitionOverlay, { opacity: 0 });
+      transitionOverlay.style.setProperty('--mask-size', '0%');
+      cards.forEach(card => gsap.set(card.element, { opacity: 1 }));
     });
 
     let scrollProgress = 0;
