@@ -54,13 +54,16 @@
     #bgVideo { z-index: 1; }
     #zoomVideo { z-index: 2; }
     #villageVideo { z-index: 3; }
+    #shopVideo { z-index: 4; }
+    #wallVideo { z-index: 5; }
+    #wallLoopVideo { z-index: 6; }
 
     /* Click 위치 조절 레이어 */
     .content-overlay {
       position: absolute;
       z-index: 30; 
       pointer-events: none;
-      top: 80%;
+      top: 86%;
       left: 50%;
       transform: translate(-50%, -50%);
       transition: opacity 0.6s ease, transform 0.6s ease;
@@ -72,7 +75,7 @@
       pointer-events: none;
     }
 
-    /* 글래스모피즘 버튼 */
+    /* 타원형 글래스모피즘 Click 버튼 스타일 */
     .pure-glass-btn {
       pointer-events: auto;
       width: 80px;
@@ -157,85 +160,132 @@
       transform: scale(0.95);
     }
 
-    .home-glass-btn {
+    /* 원형 글래스모피즘 선택 버튼 공통 디자인 */
+    .pure-glass-circle-btn {
       position: absolute;
-      top: 24px;
-      right: 24px;
-      z-index: 50;
-      width: 44px;
-      height: 44px;
+      z-index: 40;
+      pointer-events: none;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.05) 60%, rgba(255, 255, 255, 0.15) 100%);
+
+      background: radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.04) 55%, rgba(255, 255, 255, 0.12) 100%);
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.5);
-      box-shadow:
-        0 0 12px rgba(255, 255, 255, 0.2),
-        2px 6px 14px rgba(0, 0, 0, 0.15),
-        inset 1px 1px 2px rgba(255, 255, 255, 0.8),
-        inset -1px -1px 4px rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      box-shadow: 
+        0 0 10px rgba(255, 200, 220, 0.2), 
+        0 0 14px rgba(160, 230, 255, 0.2), 
+        2px 5px 12px rgba(0, 0, 0, 0.12), 
+        inset 1px 1px 2px rgba(255, 255, 255, 0.85), 
+        inset -1px -1.5px 4px rgba(255, 255, 255, 0.25);
+
       cursor: pointer;
       outline: none;
-      transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+      opacity: 0;
+      transition: opacity 0.6s ease, transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), border-color 0.4s ease, box-shadow 0.4s ease;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .pure-glass-circle-btn.visible {
+      opacity: 1;
       pointer-events: auto;
     }
 
-    .home-glass-btn svg {
-      width: 20px;
-      height: 20px;
-      fill: none;
-      stroke: #ffffff;
-      stroke-width: 2;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
-      transition: transform 0.3s ease;
+    #leftBtn {
+      top: 50%;
+      left: 34%;
+      transform: translate(-50%, -50%);
     }
 
-    .home-glass-btn:hover {
-      transform: scale(1.1);
-      box-shadow:
-        0 0 16px rgba(255, 255, 255, 0.4),
-        4px 8px 20px rgba(0, 0, 0, 0.2),
-        inset 1px 1.5px 3px rgba(255, 255, 255, 0.95);
+    #rightBtn {
+      top: 79%;
+      left: 86%;
+      transform: translate(-50%, -50%);
     }
 
-    .home-glass-btn:hover svg {
-      transform: scale(1.08);
+    .pure-glass-circle-btn::before {
+      content: '';
+      position: absolute;
+      top: -1px; left: -1px; right: -1px; bottom: -1px;
+      border-radius: 50%;
+      background: conic-gradient(
+        from 130deg at 50% 50%, 
+        rgba(255, 180, 210, 0.3) 0deg, 
+        rgba(255, 235, 170, 0.35) 70deg, 
+        rgba(150, 240, 210, 0.35) 150deg, 
+        rgba(140, 210, 255, 0.3) 230deg, 
+        rgba(220, 180, 255, 0.3) 300deg, 
+        rgba(255, 180, 210, 0.3) 360deg
+      );
+      -webkit-mask: radial-gradient(circle, transparent 55%, #000 68%);
+      mask: radial-gradient(circle, transparent 55%, #000 68%);
+      pointer-events: none;
+      opacity: 0.75;
+      filter: blur(1.2px);
     }
 
-    .home-glass-btn:active {
-      transform: scale(0.92);
+    .pure-glass-circle-btn::after {
+      content: '';
+      position: absolute;
+      top: 10%; left: 15%;
+      width: 40%; height: 38%;
+      border-radius: 50%;
+      background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.2) 50%, transparent 80%);
+      transform: rotate(-20deg);
+      pointer-events: none;
+      filter: blur(0.5px);
     }
 
+    #leftBtn:hover, #rightBtn:hover {
+      transform: translate(-50%, -50%) scale(1.12);
+      border-color: rgba(255, 255, 255, 0.75);
+      box-shadow: 
+        0 0 14px rgba(255, 180, 220, 0.35), 
+        0 0 20px rgba(150, 220, 255, 0.35), 
+        3px 8px 16px rgba(0, 0, 0, 0.16), 
+        inset 1.5px 1.5px 3px rgba(255, 255, 255, 0.95), 
+        inset -1.5px -2px 5px rgba(255, 255, 255, 0.35);
+    }
+
+    #leftBtn:active, #rightBtn:active {
+      transform: translate(-50%, -50%) scale(0.92);
+    }
   </style>
 </head>
 <body>
 
   <div id="app-container">
     <div class="video-container">
-      <button id="homeBtn" class="home-glass-btn" aria-label="메인 화면 세 번째 섹션으로 이동">
-        <svg viewBox="0 0 24 24">
-          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-          <polyline points="9 22 9 12 15 12 15 22"></polyline>
-        </svg>
-      </button>
       <!-- 1. 기본 배경 영상 (무한 루프) -->
       <video id="bgVideo" class="fullscreen-video active" autoplay loop muted playsinline preload="auto">
         <source src="port.mp4" type="video/mp4" />
       </video>
 
-      <!-- 2. Click 시 1회 재생되는 줌 영상 (loop 제거) -->
+      <!-- 2. Click 시 1회 재생되는 줌 영상 -->
       <video id="zoomVideo" class="fullscreen-video" muted playsinline preload="auto">
         <source src="port zoom.mp4" type="video/mp4" />
       </video>
 
-      <!-- 3. 두 번째 영상 종료 후 무한 루프로 재생될 마을 영상 (loop 적용) -->
+      <!-- 3. 마을 영상 (무한 루프) -->
       <video id="villageVideo" class="fullscreen-video" loop muted playsinline preload="auto">
         <source src="port z to village.mp4" type="video/mp4" />
+      </video>
+
+      <!-- 4. 오른쪽 버튼 클릭 시 1회 재생 후 정지하는 가게 영상 -->
+      <video id="shopVideo" class="fullscreen-video" muted playsinline preload="auto">
+        <source src="port z to shop.mp4" type="video/mp4" />
+      </video>
+
+      <!-- 5. 왼쪽 버튼 클릭 시 1회 재생되는 벽 이동 영상 -->
+      <video id="wallVideo" class="fullscreen-video" muted playsinline preload="auto">
+        <source src="port z to wall.mp4" type="video/mp4" />
+      </video>
+
+      <!-- 6. 벽 이동 영상 종료 후 연결되는 벽 무한 루프 영상 -->
+      <video id="wallLoopVideo" class="fullscreen-video" loop muted playsinline preload="auto">
+        <source src="port wall.mp4" type="video/mp4" />
       </video>
 
       <!-- Click 버튼 오버레이 -->
@@ -244,6 +294,10 @@
           Click
         </button>
       </div>
+
+      <!-- 세 번째 영상 재생 후 등장할 원형 글래스모피즘 버튼 -->
+      <button class="pure-glass-circle-btn" id="leftBtn" aria-label="왼쪽 선택 버튼"></button>
+      <button class="pure-glass-circle-btn" id="rightBtn" aria-label="오른쪽 선택 버튼"></button>
     </div>
 
     <script>
@@ -251,15 +305,23 @@
         const bgVideo = document.getElementById('bgVideo');
         const zoomVideo = document.getElementById('zoomVideo');
         const villageVideo = document.getElementById('villageVideo');
+        const shopVideo = document.getElementById('shopVideo');
+        const wallVideo = document.getElementById('wallVideo');
+        const wallLoopVideo = document.getElementById('wallLoopVideo');
         const playBtn = document.getElementById('playBtn');
         const overlay = document.getElementById('overlay');
+        const leftBtn = document.getElementById('leftBtn');
+        const rightBtn = document.getElementById('rightBtn');
 
         if (bgVideo) bgVideo.load();
         if (zoomVideo) zoomVideo.load();
         if (villageVideo) villageVideo.load();
+        if (shopVideo) shopVideo.load();
+        if (wallVideo) wallVideo.load();
+        if (wallLoopVideo) wallLoopVideo.load();
 
         // 비디오 매끄러운 전환 함수
-        function switchVideoSeamlessly(currentVid, nextVid) {
+        function switchVideoSeamlessly(currentVid, nextVid, onComplete) {
           nextVid.currentTime = 0;
 
           const onPlaying = () => {
@@ -269,6 +331,7 @@
             setTimeout(() => {
               currentVid.classList.remove('active');
               currentVid.pause();
+              if (onComplete) onComplete();
             }, 300);
           };
 
@@ -280,6 +343,7 @@
               nextVid.classList.add('active');
               currentVid.classList.remove('active');
               currentVid.pause();
+              if (onComplete) onComplete();
             });
           }
         }
@@ -292,24 +356,52 @@
           });
         }
 
-        // 두 번째 영상 종료 -> 세 번째 영상(port z to village) 무한 루프 재생
+        // 두 번째 영상 종료 -> 세 번째 영상(port z to village) 재생 및 버튼 노출
         if (zoomVideo) {
           zoomVideo.addEventListener('ended', () => {
-            switchVideoSeamlessly(zoomVideo, villageVideo);
+            switchVideoSeamlessly(zoomVideo, villageVideo, () => {
+              setTimeout(() => {
+                if (leftBtn) leftBtn.classList.add('visible');
+                if (rightBtn) rightBtn.classList.add('visible');
+              }, 300);
+            });
+          });
+        }
+
+        // 왼쪽 버튼 클릭 -> 두 원형 버튼 숨기기 & 다섯 번째 영상(port z to wall) 1회 재생
+        if (leftBtn) {
+          leftBtn.addEventListener('click', () => {
+            if (leftBtn) leftBtn.classList.remove('visible');
+            if (rightBtn) rightBtn.classList.remove('visible');
+            switchVideoSeamlessly(villageVideo, wallVideo);
+          });
+        }
+
+        // 오른쪽 버튼 클릭 -> 두 원형 버튼 숨기기 & 네 번째 영상(port z to shop) 1회 재생
+        if (rightBtn) {
+          rightBtn.addEventListener('click', () => {
+            if (leftBtn) leftBtn.classList.remove('visible');
+            if (rightBtn) rightBtn.classList.remove('visible');
+            switchVideoSeamlessly(villageVideo, shopVideo);
+          });
+        }
+
+        // 네 번째 영상(shop) 재생 완료 시 일시정지 (마지막 프레임 고정)
+        if (shopVideo) {
+          shopVideo.addEventListener('ended', () => {
+            shopVideo.pause();
+          });
+        }
+
+        // 다섯 번째 영상(wall) 재생 완료 시 여섯 번째 루프 영상(port wall)으로 전환
+        if (wallVideo) {
+          wallVideo.addEventListener('ended', () => {
+            switchVideoSeamlessly(wallVideo, wallLoopVideo);
           });
         }
       })();
     </script>
   </div>
-
-  <script>
-    const detailHomeBtn = document.getElementById('homeBtn');
-    if (detailHomeBtn) {
-      detailHomeBtn.addEventListener('click', () => {
-        window.location.href = 'new main.html#gallerySection';
-      });
-    }
-  </script>
 
 </body>
 </html>
