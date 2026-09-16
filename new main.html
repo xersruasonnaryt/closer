@@ -108,7 +108,7 @@
     .clean-click-btn {
       position: absolute;
       top: 50%;
-      left: 68%;
+      left: 66%;
       transform: translate(-50%, -50%);
       z-index: 20;
 
@@ -288,9 +288,9 @@
     <!-- 2. 중간 이미지 섹션 -->
     <section class="image-section" id="imageSection">
       <div class="image-wrapper">
-        <img class="bg-image" src="https://i.imgur.com/YZwQaAp.png" alt="Featured Visual">
+        <img class="bg-image" src="https://i.imgur.com/8uoSgb2.png" alt="Featured Visual">
         <!-- 클릭 시 오버레이될 이미지 -->
-        <img class="overlay-image" id="overlayImage" src="https://i.imgur.com/o4dOzC4.png" alt="Overlay Visual">
+        <img class="overlay-image" id="overlayImage" src="https://i.imgur.com/pB6I1fG.png" alt="Overlay Visual">
         <!-- 오로라 글래스모피즘 Click 버튼 -->
         <button class="clean-click-btn" id="clickBtn">(Click)</button>
       </div>
@@ -367,11 +367,12 @@
       'https://i.imgur.com/ccPDQhK.jpeg'
     ];
 
+    /* 각 카테고리 전환 트랜지션 시 확대 표시될 이미지들 */
     const expandImages = [
       'https://i.imgur.com/Uu0UXLG.png',
       'https://i.imgur.com/RbVuhtw.jpeg',
       'https://i.imgur.com/NfUBBVE.jpeg',
-      'https://i.imgur.com/hsFMulX.jpeg',
+      'https://i.imgur.com/hsFMulX.jpeg', // '하얗게 눈 내리는 정원' 전환용 이미지 적용
       'https://i.imgur.com/lmnXmwm.jpeg'
     ];
 
@@ -410,7 +411,6 @@
     const minScroll = 0;
     const maxScroll = (totalSlots - 1) * yStep;
     const cards = [];
-
 
     function triggerMaskExpand(cardEl, expandImgUrl, targetUrl) {
       let centerX = window.innerWidth / 2;
