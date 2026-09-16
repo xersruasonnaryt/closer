@@ -389,11 +389,17 @@
     const pageTurnSfx = document.getElementById('pageTurnSfx');
 
     const STREET_VOLUME = 0.34;
+    const CAFE_LOFI_VOLUME = 0.16;
+    const BRANCH_LOFI_VOLUME = CAFE_LOFI_VOLUME * 0.5;
+    const CUTLERY_VOLUME = 0.15;
+    const CAFE_PAGE_TURN_VOLUME = 0.22;
+    const FLOWER_PAGE_TURN_VOLUME = Math.min(1, CAFE_PAGE_TURN_VOLUME * 1.3);
+
     streetAmbience.volume = STREET_VOLUME;
     whisperAmbience.volume = 0.18;
-    lofiAmbience.volume = 0.16;
-    cutlerySfx.volume = 0.15;
-    pageTurnSfx.volume = 0.22;
+    lofiAmbience.volume = CAFE_LOFI_VOLUME;
+    cutlerySfx.volume = CUTLERY_VOLUME;
+    pageTurnSfx.volume = CAFE_PAGE_TURN_VOLUME;
 
     let cafeStageStarted = false;
     let streetFadeFrame = null;
@@ -411,6 +417,18 @@
           // 소리 자동 재생이 차단되면 다음 사용자 입력에서 다시 시도합니다.
         });
       }
+    }
+
+    function stopAudio(audio) {
+      audio.pause();
+      audio.currentTime = 0;
+    }
+
+    function clearEffectTimers() {
+      clearTimeout(cutleryTimer);
+      clearTimeout(pageTurnTimer);
+      cutleryTimer = null;
+      pageTurnTimer = null;
     }
 
     function startStreetAudio() {
@@ -470,6 +488,28 @@
       }, delay);
     }
 
+    function setBranchAudio(branch) {
+      clearEffectTimers();
+      stopAudio(streetAmbience);
+      stopAudio(whisperAmbience);
+      stopAudio(cutlerySfx);
+      stopAudio(pageTurnSfx);
+
+      lofiAmbience.volume = BRANCH_LOFI_VOLUME;
+      playAudio(lofiAmbience);
+
+      if (branch === 'flower') {
+        pageTurnSfx.volume = FLOWER_PAGE_TURN_VOLUME;
+        playAudio(pageTurnSfx, true);
+        schedulePageTurn();
+        return;
+      }
+
+      cutlerySfx.volume = CUTLERY_VOLUME;
+      playAudio(cutlerySfx, true);
+      scheduleCutlery();
+    }
+
     function removeStreetUnlockListeners() {
       document.removeEventListener('pointerdown', unlockStreetAudio, true);
       document.removeEventListener('keydown', unlockStreetAudio, true);
@@ -481,6 +521,9 @@
       removeStreetUnlockListeners();
       fadeOutStreet();
 
+      lofiAmbience.volume = CAFE_LOFI_VOLUME;
+      cutlerySfx.volume = CUTLERY_VOLUME;
+      pageTurnSfx.volume = CAFE_PAGE_TURN_VOLUME;
       playAudio(whisperAmbience);
       playAudio(lofiAmbience);
       playAudio(cutlerySfx, true);
@@ -554,6 +597,7 @@
     });
 
     windowBtn.addEventListener('click', () => {
+      setBranchAudio('flower');
       windowBtn.classList.remove('visible');
       showcaseBtn.classList.remove('visible');
       switchVideoSeamlessly(zoomVideo, flowerVideo, () => {
@@ -565,6 +609,7 @@
     let isCakeTransitionDone = false;
 
     showcaseBtn.addEventListener('click', () => {
+      setBranchAudio('cake');
       windowBtn.classList.remove('visible');
       showcaseBtn.classList.remove('visible');
 
