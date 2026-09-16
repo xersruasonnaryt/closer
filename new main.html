@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Main Gallery Experience</title>
+
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollToPlugin.min.js"></script>
+
+  <!-- picnic.html 및 리소스 사전 로드 -->
+  <link rel="prefetch" href="picnic.html">
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-snap-type: y mandatory; scroll-behavior: smooth; background-color: #ffffff; }
+    body {
+      width: 100%; height: 100%;
+      background-color: #ffffff; color: #111111;
+      font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+      overflow-x: hidden; user-select: none;
+    }
+
+    /* 메인 앱 컨테이너 */
+    #app-container {
+      width: 100%; height: 100%;
+      background-color: #ffffff;
+    }
+
+    section {
+      width: 100vw; height: 100vh;
+      scroll-snap-align: start; scroll-snap-stop: always;
+      position: relative; overflow: hidden;
+    }
+
+    .hero-section { background-color: #000000; }
+    .bg-video { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    /* 첫 번째 비디오 섹션 좌측 상단 이미지 스타일 (제목) */
+    .hero-image {
+      position: absolute;
+      top: 14px;
+      left: 550px;
+      width: 25vw;
+      max-width: 650px;
+      height: auto;
+      z-index: 10;
+      pointer-events: none;
+      object-fit: contain;
+    }
+
+    @media (max-width: 768px) {
+      .hero-image {
+        top: 30px;
+        left: 30px;
+        width: 65vw;
+      }
+    }
+
+    /* 2번째 이미지 섹션 스타일 */
+    .image-section { 
+      background-color: #ffffff; 
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 40px;
+      position: relative;
+    }
+
+    /* 이미지와 버튼의 기준점인 래퍼 */
+    .image-wrapper {
+      position: relative;
+      display: inline-block;
+      max-width: 80%;
+      max-height: 80vh;
+    }
+
+    .bg-image { 
+      width: 100%;
+      height: auto;
+      max-height: 80vh;
+      object-fit: contain;
+      display: block; 
+    }
+
+    /* 클릭 시 나타날 오버레이 이미지 */
+    .overlay-image {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+      z-index: 10;
+    }
+
+    .overlay-image.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* 오로라 & 소프트 글래스모피즘 스타일 (Click 버튼) */
+    .clean-click-btn {
+      position: absolute;
+      top: 50%;
+      left: 68%;
+      transform: translate(-50%, -50%);
+      z-index: 20;
+
+      padding: 12px 32px;
+      font-size: 13px;
+      font-weight: 300;
+      letter-spacing: 2px;
+      color: #6B6B80;
+
+      background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.75) 0%,
+        rgba(235, 238, 255, 0.5) 45%,
+        rgba(253, 236, 248, 0.5) 80%,
+        rgba(255, 255, 255, 0.65) 100%
+      );
+
+      backdrop-filter: blur(16px) saturate(180%);
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      
+      border: 1px solid rgba(255, 255, 255, 0.85);
+      border-radius: 40px;
+      box-shadow: 
+        0 12px 28px -6px rgba(160, 165, 195, 0.25),
+        0 4px 12px rgba(255, 255, 255, 0.8) inset,
+        0 -4px 10px rgba(220, 215, 240, 0.3) inset;
+
+      cursor: pointer;
+      outline: none;
+      transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    .clean-click-btn:hover {
+      background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.88) 0%,
+        rgba(240, 243, 255, 0.65) 45%,
+        rgba(255, 242, 252, 0.65) 80%,
+        rgba(255, 255, 255, 0.8) 100%
+      );
+      color: #4A4A5A;
+      border-color: rgba(255, 255, 255, 1);
+      box-shadow: 
+        0 16px 36px -4px rgba(150, 155, 190, 0.35),
+        0 4px 14px rgba(255, 255, 255, 0.9) inset,
+        0 -4px 12px rgba(210, 205, 235, 0.4) inset;
+      transform: translate(-50%, -50%) scale(1.03);
+    }
+
+    .clean-click-btn:active {
+      transform: translate(-50%, -50%) scale(0.97);
+      box-shadow: 
+        0 6px 18px -4px rgba(160, 165, 195, 0.2),
+        0 2px 8px rgba(255, 255, 255, 0.8) inset;
+    }
+
+    .clean-click-btn.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    /* 공통 스크롤 가이드 스타일 */
+    .scroll-guide {
+      position: absolute; bottom: 40px; left: 50%;
+      transform: translateX(-50%); z-index: 10;
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      color: #111111; cursor: pointer;
+    }
+    
+    .hero-section .scroll-guide {
+      color: #ffffff;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
+    .hero-section .scroll-icon {
+      border-right-color: #ffffff;
+      border-bottom-color: #ffffff;
+    }
+
+    .scroll-text { font-size: 0.85rem; letter-spacing: 2px; text-transform: uppercase; font-weight: 300; opacity: 0.8; }
+    .scroll-icon {
+      width: 16px; height: 16px;
+      border-right: 1.5px solid #111111; border-bottom: 1.5px solid #111111;
+      transform: rotate(45deg); animation: bounce 1.8s infinite ease-in-out;
+    }
+    @keyframes bounce {
+      0% { transform: rotate(45deg) translate(0, 0); opacity: 0.3; }
+      50% { transform: rotate(45deg) translate(5px, 5px); opacity: 1; }
+      100% { transform: rotate(45deg) translate(0, 0); opacity: 0.3; }
+    }
+
+    .gallery-section { background-color: #ffffff; }
+    .nav-header {
+      position: absolute; top: 36px; left: 50%;
+      transform: translateX(-50%); z-index: 2000;
+      display: flex; align-items: center; gap: 14px;
+      font-size: 13px; letter-spacing: 1.5px; text-transform: lowercase;
+    }
+    .nav-header span { opacity: 0.3; cursor: pointer; transition: opacity 0.2s ease; }
+    .nav-header span:hover { opacity: 0.7; }
+    .nav-header span.active { opacity: 1; font-weight: 600; cursor: default; }
+    .nav-header .dot { width: 4px; height: 4px; background-color: #111; border-radius: 50%; opacity: 0.3; }
+
+    .viewport {
+      width: 100vw; height: 100vh;
+      perspective: 1000px; perspective-origin: 50% 50%;
+      display: flex; justify-content: center; align-items: center;
+      cursor: grab; position: relative;
+    }
+    .viewport:active { cursor: grabbing; }
+
+    .spiral-container {
+      position: absolute; top: 50%; left: 50%;
+      width: 0; height: 0; transform-style: preserve-3d; transition: opacity 0.5s ease;
+    }
+    .spiral-container.hidden { opacity: 0; pointer-events: none; }
+
+    .card-element {
+      position: absolute; left: -100px; top: -100px;
+      width: 200px; height: 200px; border-radius: 4px;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.07);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      font-size: 13px; letter-spacing: 1px; color: rgba(255, 255, 255, 0.9);
+      will-change: transform, opacity, filter; backface-visibility: visible;
+      overflow: hidden; cursor: pointer;
+      background-size: cover !important;
+      background-position: center !important;
+      transition: margin-top 0.3s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    .card-element:hover {
+      margin-top: -6px;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
+    }
+
+    .transition-overlay {
+      position: fixed; top: 0; left: 0;
+      width: 100vw; height: 100vh; z-index: 99999;
+      pointer-events: none; opacity: 0;
+      background-size: cover; background-position: center;
+      will-change: mask-image, -webkit-mask-image, opacity;
+      
+      -webkit-mask-image: radial-gradient(circle at var(--mask-x, 50%) var(--mask-y, 50%), #000 0%, #000 calc(var(--mask-size, 0%) - 20%), transparent var(--mask-size, 0%));
+      mask-image: radial-gradient(circle at var(--mask-x, 50%) var(--mask-y, 50%), #000 0%, #000 calc(var(--mask-size, 0%) - 20%), transparent var(--mask-size, 0%));
+    }
+
+    .list-container {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      display: flex; flex-direction: column; align-items: center; gap: 18px;
+      z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.5s ease;
+    }
+    .list-container.visible { opacity: 1; pointer-events: auto; }
+    .list-item { font-size: 15px; font-weight: 400; color: #111111; opacity: 0.7; cursor: pointer; transition: opacity 0.25s ease; }
+    .list-item:hover { opacity: 1; }
+  </style>
+</head>
+<body>
+
+  <div class="transition-overlay" id="transitionOverlay"></div>
+
+  <div id="app-container">
+    <!-- 1. 비디오 섹션 -->
+    <section class="hero-section" id="heroSection">
+      <!-- 좌측 상단 이미지 -->
+      <img class="hero-image" src="https://i.imgur.com/IBYsa77.png" alt="Header Overlay Visual">
+
+      <video class="bg-video" autoplay loop muted playsinline>
+        <source src="new kling.mp4" type="video/mp4">
+      </video>
+      <div class="scroll-guide" id="scrollGuide">
+        <span class="scroll-text">Scroll down</span>
+        <div class="scroll-icon"></div>
+      </div>
+    </section>
+
+    <!-- 2. 중간 이미지 섹션 -->
+    <section class="image-section" id="imageSection">
+      <div class="image-wrapper">
+        <img class="bg-image" src="https://i.imgur.com/YZwQaAp.png" alt="Featured Visual">
+        <!-- 클릭 시 오버레이될 이미지 -->
+        <img class="overlay-image" id="overlayImage" src="https://i.imgur.com/41M960J.jpeg" alt="Overlay Visual">
+        <!-- 오로라 글래스모피즘 Click 버튼 -->
+        <button class="clean-click-btn" id="clickBtn">(Click)</button>
+      </div>
+
+      <!-- 두 번째 섹션 하단 스크롤 안내 가이드 -->
+      <div class="scroll-guide" id="scrollGuide2">
+        <span class="scroll-text">Scroll down</span>
+        <div class="scroll-icon"></div>
+      </div>
+    </section>
+
+    <!-- 3. 갤러리 섹션 -->
+    <section class="gallery-section" id="gallerySection">
+      <div class="nav-header">
+        <span id="btn-spiral" class="active">spiral</span>
+        <div class="dot"></div>
+        <span id="btn-list">list</span>
+      </div>
+
+      <div class="viewport" id="viewport">
+        <div class="spiral-container" id="spiral"></div>
+
+        <div class="list-container" id="list">
+          <div class="list-item" data-id="1">맑은 봄날의 피크닉</div>
+          <div class="list-item" data-id="2">눈부신 한낮의 수족관</div>
+          <div class="list-item" data-id="3">해 질 녘의 골목길 북카페</div>
+          <div class="list-item" data-id="4">바람 불어오는 한적한 포구</div>
+          <div class="list-item" data-id="5">하얗게 눈 내리는 정원</div>
+          <div class="list-item" data-id="6">늦은 밤 불 꺼진 내 방</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    gsap.registerPlugin(ScrollToPlugin);
+
+    let isAnimating = false;
+
+    function scrollToSection(target) {
+      if (isAnimating) return;
+      isAnimating = true;
+      gsap.to(window, {
+        duration: 0.9, scrollTo: target, ease: "power2.inOut",
+        onComplete: () => { isAnimating = false; }
+      });
+    }
+
+    // 첫 번째 섹션 스크롤 가이드 클릭 이벤트
+    document.getElementById("scrollGuide").addEventListener("click", () => {
+      scrollToSection("#imageSection");
+    });
+
+    // 두 번째 섹션 스크롤 가이드 클릭 이벤트
+    document.getElementById("scrollGuide2").addEventListener("click", () => {
+      scrollToSection("#gallerySection");
+    });
+
+    const clickBtn = document.getElementById("clickBtn");
+    const overlayImage = document.getElementById("overlayImage");
+
+    clickBtn.addEventListener("click", () => {
+      clickBtn.classList.add("hidden");
+      overlayImage.classList.add("active");
+    });
+
+    const maskedCropImg = 'https://i.imgur.com/7E0yt7r.jpeg'; 
+
+    /* 스파이럴 기둥 카드 6장에 표시될 썸네일 이미지들 */
+    const images = [
+      maskedCropImg,
+      'https://i.imgur.com/LDsz2Hy.jpeg',
+      'https://i.imgur.com/f2DWcZJ.jpeg',
+      'https://i.imgur.com/7X1XJAK.jpeg',
+      'https://i.imgur.com/aycQ110.jpeg',
+      'https://i.imgur.com/ccPDQhK.jpeg'
+    ];
+
+    const expandImages = [
+      'https://i.imgur.com/Uu0UXLG.png',
+      'https://i.imgur.com/NlwcUft.jpeg',
+      'https://i.imgur.com/RbVuhtw.jpeg',
+      'https://i.imgur.com/NfUBBVE.jpeg',
+      'https://i.imgur.com/4xMzMZm.jpeg',
+      'https://i.imgur.com/lmnXmwm.jpeg'
+    ];
+
+    const pageUrls = [
+      'picnic.html',
+      'waterfish.html',
+      'bookcafe.html',
+      'port.html',
+      'winter.html',
+      'nightroom.html'
+    ];
+
+    const dummyGradients = [
+      'linear-gradient(135deg, #4a4e69, #22223b)',
+      'linear-gradient(135deg, #0984e3, #2d3436)',
+      'linear-gradient(135deg, #fd79a8, #e84393)',
+      'linear-gradient(135deg, #b2bec3, #636e72)',
+      'linear-gradient(135deg, #e84118, #2f3640)',
+      'linear-gradient(135deg, #2c3e50, #000000)'
+    ];
+
+    const spiral = document.getElementById('spiral');
+    const list = document.getElementById('list');
+    const viewport = document.getElementById('viewport');
+    const transitionOverlay = document.getElementById('transitionOverlay');
+
+    const btnSpiral = document.getElementById('btn-spiral');
+    const btnList = document.getElementById('btn-list');
+
+    let currentView = 'spiral';
+    const totalTurns = 3;
+    const totalSlots = images.length * totalTurns;
+    const radius = 460;
+    const yStep = 95;
+    const angleStep = 0.48;
+
+    const minScroll = 0;
+    const maxScroll = (totalSlots - 1) * yStep;
+    const cards = [];
+
+    let preloadedPicnicHTML = null;
+
+    function preloadPageAndResources(url) {
+      fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          preloadedPicnicHTML = html;
+
+          const parser = new DOMParser();
+          const parsedDoc = parser.parseFromString(html, 'text/html');
+          const imgElements = parsedDoc.querySelectorAll('img');
+
+          imgElements.forEach(imgEl => {
+            if (imgEl.src) {
+              const img = new Image();
+              img.src = imgEl.src;
+            }
+          });
+        })
+        .catch(err => console.error("사전 로드 실패:", err));
+    }
+
+    preloadPageAndResources(pageUrls[0]);
+
+    // 💡 동적 페이지 전환 및 비디오 재생 제어 함수 보완
+    function applyLoadedPage(htmlText, url) {
+      const parser = new DOMParser();
+      const newDoc = parser.parseFromString(htmlText, 'text/html');
+      
+      const appContainer = document.getElementById('app-container');
+      const newAppContent = newDoc.querySelector('#app-container') || newDoc.body;
+      
+      appContainer.innerHTML = newAppContent.innerHTML;
+      window.scrollTo(0, 0);
+
+      // 삽입된 HTML 내의 모든 동영상 요소를 강제 초기화 및 즉시 재생
+      const newVideos = appContainer.querySelectorAll('video');
+      newVideos.forEach(video => {
+        video.load();
+        if (video.hasAttribute('autoplay') || video.classList.contains('active')) {
+          const playPromise = video.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(e => console.log("비디오 재생 대기:", e));
+          }
+        }
+      });
+
+      // 스크립트 실행 동적 바인딩
+      const scripts = appContainer.querySelectorAll('script');
+      scripts.forEach(oldScript => {
+        const newScript = document.createElement('script');
+        Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+        newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+        oldScript.parentNode.replaceChild(newScript, oldScript);
+      });
+
+      history.pushState(null, '', url);
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          gsap.to(transitionOverlay, {
+            opacity: 0,
+            duration: 0.35,
+            ease: "power1.out",
+            onComplete: () => {
+              transitionOverlay.style.setProperty('--mask-size', `0%`);
+            }
+          });
+        });
+      });
+    }
+
+    function triggerMaskExpand(cardEl, expandImgUrl, targetUrl) {
+      let centerX = window.innerWidth / 2;
+      let centerY = window.innerHeight / 2;
+
+      if (cardEl) {
+        const rect = cardEl.getBoundingClientRect();
+        centerX = rect.left + rect.width / 2;
+        centerY = rect.top + rect.height / 2;
+      }
+
+      transitionOverlay.style.backgroundImage = `url('${expandImgUrl}')`;
+      transitionOverlay.style.setProperty('--mask-x', `${centerX}px`);
+      transitionOverlay.style.setProperty('--mask-y', `${centerY}px`);
+      transitionOverlay.style.setProperty('--mask-size', `0%`);
+
+      gsap.set(transitionOverlay, { opacity: 0 });
+
+      const maskObj = { size: 0 };
+
+      gsap.to(transitionOverlay, {
+        duration: 0.8,
+        opacity: 1,
+        ease: "power2.inOut"
+      });
+
+      gsap.to(maskObj, {
+        size: 150,
+        duration: 1.0,
+        ease: "power2.inOut",
+        onUpdate: () => {
+          transitionOverlay.style.setProperty('--mask-size', `${maskObj.size}%`);
+        },
+        onComplete: () => {
+          if (targetUrl === pageUrls[0] && preloadedPicnicHTML) {
+            applyLoadedPage(preloadedPicnicHTML, targetUrl);
+          } else {
+            fetch(targetUrl)
+              .then(res => res.text())
+              .then(html => applyLoadedPage(html, targetUrl))
+              .catch(() => { window.location.href = targetUrl; });
+          }
+        }
+      });
+
+      if (cardEl) {
+        gsap.to(cardEl, {
+          duration: 0.4,
+          delay: 0.1,
+          opacity: 0,
+          ease: "power1.out"
+        });
+      }
+    }
+
+    function navigateToDetail(index, cardEl) {
+      const imgIndex = index % images.length;
+      const targetUrl = pageUrls[imgIndex];
+      const expandImgUrl = expandImages[imgIndex];
+
+      if (expandImgUrl && !expandImgUrl.includes('이미지_주소')) {
+        triggerMaskExpand(cardEl, expandImgUrl, targetUrl);
+      } else {
+        window.location.href = targetUrl;
+      }
+    }
+
+    for (let i = 0; i < totalSlots; i++) {
+      const cardEl = document.createElement('div');
+      cardEl.className = 'card-element';
+
+      const imgIndex = i % images.length;
+      const imgUrl = images[imgIndex];
+
+      cardEl.style.background = dummyGradients[imgIndex];
+
+      if (imgUrl && !imgUrl.includes('이미지주소')) {
+        const img = new Image();
+        img.src = imgUrl;
+        img.onload = () => {
+          cardEl.style.backgroundImage = `url('${imgUrl}')`;
+          cardEl.style.backgroundColor = '#ffffff';
+        };
+      }
+
+      cardEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        navigateToDetail(i, cardEl);
+      });
+
+      spiral.appendChild(cardEl);
+      cards.push({
+        element: cardEl,
+        baseAngle: i * angleStep,
+        baseY: i * yStep
+      });
+    }
+
+    document.querySelectorAll('.list-item').forEach((item, index) => {
+      item.addEventListener('click', () => { navigateToDetail(index, null); });
+    });
+
+    let scrollProgress = 0;
+    let targetScrollProgress = 0;
+    let isDragging = false;
+    let startY = 0;
+    let dragStartProgress = 0;
+
+    btnSpiral.addEventListener('click', () => {
+      if (currentView === 'spiral') return;
+      currentView = 'spiral';
+      btnSpiral.classList.add('active');
+      btnList.classList.remove('active');
+      spiral.classList.remove('hidden');
+      list.classList.remove('visible');
+    });
+
+    btnList.addEventListener('click', () => {
+      if (currentView === 'list') return;
+      currentView = 'list';
+      btnList.classList.add('active');
+      btnSpiral.classList.remove('active');
+      spiral.classList.add('hidden');
+      list.classList.add('visible');
+    });
+
+    window.addEventListener('wheel', (e) => {
+      const currentScrollY = window.scrollY;
+      const vh = window.innerHeight;
+
+      if (currentScrollY < vh * 0.5) {
+        if (e.deltaY > 0) {
+          e.preventDefault();
+          scrollToSection("#imageSection");
+        }
+      } 
+      else if (currentScrollY >= vh * 0.5 && currentScrollY < vh * 1.5) {
+        if (e.deltaY > 0) {
+          e.preventDefault();
+          scrollToSection("#gallerySection");
+        } else if (e.deltaY < 0) {
+          e.preventDefault();
+          scrollToSection("#heroSection");
+        }
+      } 
+      else {
+        if (currentView === 'spiral') {
+          if (targetScrollProgress <= minScroll && e.deltaY < 0) {
+            if (scrollProgress <= 0.5) {
+              e.preventDefault();
+              scrollToSection("#imageSection");
+              return;
+            }
+          }
+          e.preventDefault();
+          targetScrollProgress += e.deltaY * 0.45;
+          targetScrollProgress = Math.max(minScroll, Math.min(maxScroll, targetScrollProgress));
+        } else if (currentView === 'list') {
+          if (e.deltaY < 0) {
+            e.preventDefault();
+            scrollToSection("#imageSection");
+          }
+        }
+      }
+    }, { passive: false });
+
+    viewport.addEventListener('mousedown', (e) => {
+      if (currentView !== 'spiral' || window.scrollY < window.innerHeight * 1.5) return;
+      if (e.target.closest('.card-element')) return;
+      isDragging = true;
+      startY = e.clientY;
+      dragStartProgress = targetScrollProgress;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging || currentView !== 'spiral') return;
+      const deltaY = e.clientY - startY;
+      let newProgress = dragStartProgress - deltaY * 2.0;
+      targetScrollProgress = Math.max(minScroll, Math.min(maxScroll, newProgress));
+    });
+
+    window.addEventListener('mouseup', () => isDragging = false);
+
+    function render() {
+      if (currentView === 'spiral') {
+        scrollProgress += (targetScrollProgress - scrollProgress) * 0.06;
+
+        cards.forEach(card => {
+          const currentY = card.baseY - scrollProgress;
+          const currentAngle = card.baseAngle - (scrollProgress / yStep) * angleStep;
+
+          const x = Math.sin(currentAngle) * radius;
+          const z = Math.cos(currentAngle) * radius;
+
+          const scaleX = Math.max(0.3, Math.abs(Math.cos(currentAngle)));
+          const scaleY = 0.88 + ((z + radius) / (radius * 2)) * 0.12;
+
+          card.element.style.transform = `translate3d(${x}px, ${currentY}px, ${z}px) rotateY(${currentAngle}rad) scale(${scaleX}, ${scaleY})`;
+          card.element.style.zIndex = Math.round(z + radius);
+
+          let depthFactor = (z + radius) / (radius * 2);
+          depthFactor = Math.max(0, Math.min(1, depthFactor));
+
+          const blurAmount = Math.pow(1 - depthFactor, 1.5) * 16;
+          const opacityAmount = Math.pow(depthFactor, 2.2) * 0.85 + 0.15;
+
+          card.element.style.filter = `blur(${blurAmount.toFixed(1)}px)`;
+          
+          if (card.element.style.opacity !== '0') {
+            card.element.style.opacity = opacityAmount.toFixed(2);
+          }
+        });
+      }
+      requestAnimationFrame(render);
+    }
+
+    render();
+  </script>
+</body>
+</html>
