@@ -450,6 +450,49 @@
           birdFadeAnimation = requestAnimationFrame(fade);
         }
 
+        function fadeOutAmbience(audio, duration = 650) {
+          if (!audio) return;
+
+          if (audio.paused) {
+            audio.volume = 0;
+            return;
+          }
+
+          const startVolume = audio.volume;
+          const startTime = performance.now();
+
+          const fade = (now) => {
+            const progress = Math.min((now - startTime) / duration, 1);
+            audio.volume = Math.max(0, startVolume * (1 - progress));
+
+            if (progress < 1) {
+              requestAnimationFrame(fade);
+            } else {
+              audio.pause();
+              audio.currentTime = 0;
+            }
+          };
+
+          requestAnimationFrame(fade);
+        }
+
+        function playOnlyAmbience(activeAudio) {
+          const activeTrack = ambienceTracks.find(({ audio }) => audio === activeAudio);
+
+          if (activeTrack && activeTrack.audio) {
+            activeTrack.audio.volume = activeTrack.volume;
+            const playPromise = activeTrack.audio.play();
+            if (playPromise !== undefined) {
+              playPromise.catch(() => {});
+            }
+          }
+
+          fadeOutBirdAmbience(450);
+          [grassAmbience, riverAmbience].forEach((audio) => {
+            if (audio !== activeAudio) fadeOutAmbience(audio);
+          });
+        }
+
         function unlockAmbience(event) {
           const isPlayButtonAction = event.target instanceof Element && event.target.closest('#playBtn');
           startAmbience(!zoomStageStarted && !isPlayButtonAction);
@@ -517,6 +560,7 @@
 
         if (flowerPointBtn) {
           flowerPointBtn.addEventListener('click', () => {
+            playOnlyAmbience(grassAmbience);
             flowerPointBtn.classList.remove('visible');
             riverPointBtn.classList.remove('visible');
 
@@ -528,6 +572,7 @@
 
         if (riverPointBtn) {
           riverPointBtn.addEventListener('click', () => {
+            playOnlyAmbience(riverAmbience);
             flowerPointBtn.classList.remove('visible');
             riverPointBtn.classList.remove('visible');
 
