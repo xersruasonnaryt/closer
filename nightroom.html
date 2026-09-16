@@ -316,19 +316,19 @@
 <body>
 
   <div class="video-container">
-    <video id="windowVideo" class="fullscreen-video" muted playsinline preload="auto">
+    <video id="windowVideo" class="fullscreen-video" muted playsinline preload="metadata">
       <source src="nightroom z to window.mp4" type="video/mp4" />
     </video>
 
-    <video id="phoneVideo" class="fullscreen-video" muted playsinline preload="auto">
+    <video id="phoneVideo" class="fullscreen-video" muted playsinline preload="metadata">
       <source src="nightroom z to phone.mp4" type="video/mp4" />
     </video>
 
-    <video id="zoomVideo" class="fullscreen-video" muted playsinline preload="auto">
+    <video id="zoomVideo" class="fullscreen-video" muted playsinline preload="metadata">
       <source src="nightroom to zoom.mp4" type="video/mp4" />
     </video>
 
-    <video id="loopVideo" class="fullscreen-video loop-video" loop muted playsinline preload="auto">
+    <video id="loopVideo" class="fullscreen-video loop-video" loop muted playsinline preload="metadata">
       <source src="nightroom zoom.mp4" type="video/mp4" />
     </video>
 
@@ -361,6 +361,12 @@
 
     let transitionTriggered = false;
 
+    function playFromStart(video) {
+      if (video.readyState === 0) video.load();
+      video.currentTime = 0;
+      return video.play();
+    }
+
     function revealFirstVideo() {
       bgVideo.classList.add('ready');
       overlay.classList.add('visible');
@@ -373,20 +379,12 @@
       bgVideo.addEventListener('loadeddata', revealFirstVideo, { once: true });
     }
 
-    window.addEventListener('load', () => {
-      zoomVideo.load();
-      loopVideo.load();
-      phoneVideo.load();
-      windowVideo.load();
-    });
-
     playBtn.addEventListener('click', () => {
       overlay.classList.add('hidden');
       overlay.classList.remove('visible');
 
       zoomVideo.style.display = 'block';
-      zoomVideo.currentTime = 0;
-      const playPromise = zoomVideo.play();
+      const playPromise = playFromStart(zoomVideo);
 
       if (playPromise !== undefined) {
         playPromise.then(() => {
@@ -402,8 +400,7 @@
         transitionTriggered = true;
         
         loopVideo.style.display = 'block';
-        loopVideo.currentTime = 0;
-        loopVideo.play().then(() => {
+        playFromStart(loopVideo).then(() => {
           zoomVideo.classList.add('fade-out');
           setTimeout(() => {
             zoomVideo.style.display = 'none';
@@ -437,9 +434,8 @@
       rightBtn.classList.add('fade-out');
 
       windowVideo.style.display = 'block';
-      windowVideo.currentTime = 0;
 
-      windowVideo.play().then(() => {
+      playFromStart(windowVideo).then(() => {
         requestAnimationFrame(() => {
           windowVideo.classList.add('fade-in');
           setTimeout(() => {
@@ -458,9 +454,8 @@
       rightBtn.classList.add('fade-out');
 
       phoneVideo.style.display = 'block';
-      phoneVideo.currentTime = 0;
 
-      phoneVideo.play().then(() => {
+      playFromStart(phoneVideo).then(() => {
         requestAnimationFrame(() => {
           phoneVideo.classList.add('fade-in');
           setTimeout(() => {

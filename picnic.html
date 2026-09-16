@@ -326,27 +326,27 @@
         <source src="picnic.mp4" type="video/mp4" />
       </video>
 
-      <video id="zoomTransitionVideo" class="fullscreen-video" muted playsinline preload="auto">
+      <video id="zoomTransitionVideo" class="fullscreen-video" muted playsinline preload="metadata">
         <source src="picnic to zoom.mp4" type="video/mp4" />
       </video>
 
-      <video id="zoomLoopVideo" class="fullscreen-video" loop muted playsinline preload="auto">
+      <video id="zoomLoopVideo" class="fullscreen-video" loop muted playsinline preload="metadata">
         <source src="picnic zoom.mp4" type="video/mp4" />
       </video>
 
-      <video id="flowerVideo" class="fullscreen-video" muted playsinline preload="auto">
+      <video id="flowerVideo" class="fullscreen-video" muted playsinline preload="metadata">
         <source src="picnic z to flower.mp4" type="video/mp4" />
       </video>
 
-      <video id="flowerLoopVideo" class="fullscreen-video" loop muted playsinline preload="auto">
+      <video id="flowerLoopVideo" class="fullscreen-video" loop muted playsinline preload="metadata">
         <source src="picnic flower.mp4" type="video/mp4" />
       </video>
 
-      <video id="fishVideo" class="fullscreen-video" muted playsinline preload="auto">
+      <video id="fishVideo" class="fullscreen-video" muted playsinline preload="metadata">
         <source src="picnic z to fish.mp4" type="video/mp4" />
       </video>
 
-      <video id="fishLoopVideo" class="fullscreen-video" loop muted playsinline preload="auto">
+      <video id="fishLoopVideo" class="fullscreen-video" loop muted playsinline preload="metadata">
         <source src="picnic fish.mp4" type="video/mp4" />
       </video>
 
@@ -376,19 +376,15 @@
         const overlay = document.getElementById('overlay');
         const homeBtn = document.getElementById('homeBtn');
 
-        const allVideos = [bgVideo, zoomTransition, zoomLoop, flowerVideo, flowerLoop, fishVideo, fishLoop];
-        
-        allVideos.forEach(vid => {
-          if (vid) vid.load();
-        });
-
         // 첫 번째 비디오 강제 재생 실행
         if (bgVideo) {
+          if (bgVideo.readyState === 0) bgVideo.load();
           bgVideo.currentTime = 0;
           bgVideo.play().catch(e => console.log("bgVideo 재생 대기:", e));
         }
 
         function switchVideoSeamlessly(currentVid, nextVid, onEndedCallback) {
+          if (nextVid.readyState === 0) nextVid.load();
           nextVid.currentTime = 0;
 
           const onPlaying = () => {
@@ -458,7 +454,7 @@
 
         if (homeBtn) {
           homeBtn.addEventListener('click', () => {
-            window.location.href = 'index.html#section3';
+          window.location.href = 'index.html#gallerySection';
           });
         }
       })();
