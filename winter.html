@@ -374,6 +374,17 @@
       브라우저가 비디오 태그를 지원하지 않습니다.
     </video>
 
+    <!-- 겨울 장면 효과음 -->
+    <audio id="winterWindAmbience" autoplay loop preload="auto" aria-hidden="true">
+      <source src="https://cdn.pixabay.com/audio/2024/06/08/audio_3ae6f3d7ba.mp3" type="audio/mpeg" />
+    </audio>
+    <audio id="snowCrunchAmbience" autoplay loop preload="auto" aria-hidden="true">
+      <source src="https://cdn.pixabay.com/audio/2025/04/01/audio_07bd8f2cbe.mp3" type="audio/mpeg" />
+    </audio>
+    <audio id="carolAmbience" loop preload="auto" aria-hidden="true">
+      <source src="https://cdn.pixabay.com/audio/2020/12/08/audio_2c0d4bdf16.mp3" type="audio/mpeg" />
+    </audio>
+
     <!-- Click 글래스모피즘 버튼 오버레이 -->
     <div class="content-overlay" id="overlay">
       <button class="pure-glass-btn" id="playBtn" aria-label="재생 버튼">
@@ -397,17 +408,133 @@
     const homeBtn = document.getElementById('homeBtn');
     const leftBtn = document.getElementById('leftBtn');
     const chairBtn = document.getElementById('chairBtn');
+    const winterWindAmbience = document.getElementById('winterWindAmbience');
+    const snowCrunchAmbience = document.getElementById('snowCrunchAmbience');
+    const carolAmbience = document.getElementById('carolAmbience');
+
+    const winterAudioTracks = {
+      wind: winterWindAmbience,
+      crunch: snowCrunchAmbience,
+      carol: carolAmbience
+    };
+
+    const winterAudioMixes = {
+      opening: { wind: 0.20, crunch: 0.28, carol: 0 },
+      full: { wind: 0.20, crunch: 0.28, carol: 0.14 },
+      chair: { wind: 0.08, crunch: 0.28, carol: 0.056 },
+      home: { wind: 0.20, crunch: 0, carol: 0.14 }
+    };
+
+    const winterAudioFadeJobs = new Map();
+    const WINTER_AUDIO_FADE_MS = 700;
+    const WINTER_AUDIO_REMOVE_FADE_MS = 1200;
+    let currentWinterAudioMode = 'opening';
+
+    function safelyPlayAudio(audio) {
+      if (!audio) return;
+      const playPromise = audio.play();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(() => {
+          // 브라우저가 자동 재생을 막으면 첫 사용자 입력에서 다시 시도한다.
+        });
+      }
+    }
+
+    function stopAudio(audio) {
+      if (!audio) return;
+      const activeJob = winterAudioFadeJobs.get(audio);
+      if (activeJob) cancelAnimationFrame(activeJob);
+      winterAudioFadeJobs.delete(audio);
+      audio.pause();
+      try { audio.currentTime = 0; } catch (_) {}
+    }
+
+    function fadeAudioTo(audio, targetVolume, duration, pauseAtZero = false) {
+      if (!audio) return;
+
+      const activeJob = winterAudioFadeJobs.get(audio);
+      if (activeJob) cancelAnimationFrame(activeJob);
+
+      const target = Math.max(0, Math.min(1, targetVolume));
+      const startVolume = Number.isFinite(audio.volume) ? audio.volume : 0;
+      const startedAt = performance.now();
+
+      if (target > 0 && audio.paused) safelyPlayAudio(audio);
+
+      const update = (now) => {
+        const progress = duration <= 0 ? 1 : Math.min(1, (now - startedAt) / duration);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        audio.volume = startVolume + (target - startVolume) * eased;
+
+        if (progress < 1) {
+          winterAudioFadeJobs.set(audio, requestAnimationFrame(update));
+          return;
+        }
+
+        audio.volume = target;
+        winterAudioFadeJobs.delete(audio);
+        if (pauseAtZero && target === 0) stopAudio(audio);
+      };
+
+      winterAudioFadeJobs.set(audio, requestAnimationFrame(update));
+    }
+
+    function applyWinterAudioMode(mode, initial = false) {
+      const mix = winterAudioMixes[mode];
+      if (!mix) return;
+      currentWinterAudioMode = mode;
+
+      Object.entries(winterAudioTracks).forEach(([name, audio]) => {
+        const target = mix[name] ?? 0;
+
+        if (initial) {
+          audio.volume = 0;
+          if (target > 0) safelyPlayAudio(audio);
+        }
+
+        if (target > 0) {
+          if (audio.paused) safelyPlayAudio(audio);
+          fadeAudioTo(audio, target, initial ? 1000 : WINTER_AUDIO_FADE_MS);
+        } else {
+          fadeAudioTo(audio, 0, initial ? 0 : WINTER_AUDIO_REMOVE_FADE_MS, true);
+        }
+      });
+    }
+
+    function resumeCurrentWinterAudio() {
+      const mix = winterAudioMixes[currentWinterAudioMode];
+      if (!mix) return;
+
+      Object.entries(winterAudioTracks).forEach(([name, audio]) => {
+        const target = mix[name] ?? 0;
+        if (target <= 0) return;
+        if (audio.volume === 0) audio.volume = target;
+        safelyPlayAudio(audio);
+      });
+    }
+
+    function unlockWinterAudio() {
+      resumeCurrentWinterAudio();
+    }
+
+    document.addEventListener('pointerdown', unlockWinterAudio, { once: true, capture: true });
+    document.addEventListener('touchstart', unlockWinterAudio, { once: true, capture: true });
+    document.addEventListener('keydown', unlockWinterAudio, { once: true, capture: true });
+
+    applyWinterAudioMode('opening', true);
 
     window.addEventListener('load', () => {
       zoomVideo.load();
       chairVideo.load();
       homeTransitionVideo.load();
       snowVideo.load();
+      resumeCurrentWinterAudio();
     });
 
     // Click 버튼 클릭 시 winter zooom.mp4 재생
     if (playBtn) {
       playBtn.addEventListener('click', () => {
+        applyWinterAudioMode('full');
         if (overlay) overlay.classList.add('hidden');
 
         zoomVideo.classList.add('active');
@@ -434,6 +561,7 @@
     // 왼쪽 버튼 클릭 시 winter z to chair.mp4 재생
     if (leftBtn) {
       leftBtn.addEventListener('click', () => {
+        applyWinterAudioMode('chair');
         if (leftBtn) leftBtn.classList.add('hidden');
         if (chairBtn) chairBtn.classList.add('hidden');
 
@@ -463,6 +591,7 @@
     // 오른쪽(의자) 버튼 클릭 시 winter z to home.mp4 재생
     if (chairBtn) {
       chairBtn.addEventListener('click', () => {
+        applyWinterAudioMode('home');
         if (leftBtn) leftBtn.classList.add('hidden');
         if (chairBtn) chairBtn.classList.add('hidden');
 
@@ -512,3 +641,4 @@
 
 </body>
 </html>
+
