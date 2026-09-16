@@ -113,11 +113,10 @@
 
       padding: 12px 32px;
       font-size: 13px;
-      font-weight: 300; /* 텍스트 굵기를 라이트하게 변경 */
+      font-weight: 300;
       letter-spacing: 2px;
       color: #6B6B80;
 
-      /* 파스텔 오로라 톤 그라데이션 리퀴드 글래스 효과 */
       background: linear-gradient(
         135deg,
         rgba(255, 255, 255, 0.75) 0%,
@@ -179,7 +178,6 @@
       color: #111111; cursor: pointer;
     }
     
-    /* 1번째 배경이 어두운 섹션용 스크롤 가이드 색상 지정 */
     .hero-section .scroll-guide {
       color: #ffffff;
       text-shadow: 0 2px 10px rgba(0,0,0,0.5);
@@ -296,7 +294,7 @@
         <button class="clean-click-btn" id="clickBtn">(Click)</button>
       </div>
 
-      <!-- 두 번째 섹션 하단 스크롤 안내 가이드 추가 -->
+      <!-- 두 번째 섹션 하단 스크롤 안내 가이드 -->
       <div class="scroll-guide" id="scrollGuide2">
         <span class="scroll-text">Scroll down</span>
         <div class="scroll-icon"></div>
@@ -345,7 +343,7 @@
       scrollToSection("#imageSection");
     });
 
-    // 두 번째 섹션 스크롤 가이드 클릭 이벤트 추가 (갤러리 섹션으로 이동)
+    // 두 번째 섹션 스크롤 가이드 클릭 이벤트
     document.getElementById("scrollGuide2").addEventListener("click", () => {
       scrollToSection("#gallerySection");
     });
@@ -375,7 +373,7 @@
       'https://i.imgur.com/NlwcUft.jpeg',
       'https://i.imgur.com/RbVuhtw.jpeg',
       'https://i.imgur.com/NfUBBVE.jpeg',
-      'https://i.imgur.com/4xMzLZm.jpeg',
+      'https://i.imgur.com/4xMzMZm.jpeg',
       'https://i.imgur.com/lmnXmwm.jpeg'
     ];
 
@@ -440,6 +438,7 @@
 
     preloadPageAndResources(pageUrls[0]);
 
+    // 💡 동적 페이지 전환 및 비디오 재생 제어 함수 보완
     function applyLoadedPage(htmlText, url) {
       const parser = new DOMParser();
       const newDoc = parser.parseFromString(htmlText, 'text/html');
@@ -450,6 +449,19 @@
       appContainer.innerHTML = newAppContent.innerHTML;
       window.scrollTo(0, 0);
 
+      // 삽입된 HTML 내의 모든 동영상 요소를 강제 초기화 및 즉시 재생
+      const newVideos = appContainer.querySelectorAll('video');
+      newVideos.forEach(video => {
+        video.load();
+        if (video.hasAttribute('autoplay') || video.classList.contains('active')) {
+          const playPromise = video.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(e => console.log("비디오 재생 대기:", e));
+          }
+        }
+      });
+
+      // 스크립트 실행 동적 바인딩
       const scripts = appContainer.querySelectorAll('script');
       scripts.forEach(oldScript => {
         const newScript = document.createElement('script');
