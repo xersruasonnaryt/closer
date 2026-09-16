@@ -350,6 +350,19 @@
         <source src="picnic fish.mp4" type="video/mp4" />
       </video>
 
+      <!-- 자연 배경음: 새소리(Public Domain), 잔디 바람(CC0), 흐르는 물(Public Domain) -->
+      <audio id="birdAmbience" autoplay loop preload="auto" aria-hidden="true">
+        <source src="https://upload.wikimedia.org/wikipedia/commons/8/80/Birds_singing_in_garden.ogg" type="audio/ogg" />
+      </audio>
+
+      <audio id="grassAmbience" autoplay loop preload="auto" aria-hidden="true">
+        <source src="https://cdn.freesound.org/previews/845/845415_6998158-lq.mp3" type="audio/mpeg" />
+      </audio>
+
+      <audio id="riverAmbience" autoplay loop preload="auto" aria-hidden="true">
+        <source src="https://upload.wikimedia.org/wikipedia/commons/2/26/Flowing-water-100019.ogg" type="audio/ogg" />
+      </audio>
+
       <button id="flowerPointBtn" class="glass-lens-btn" aria-label="꽃과 나비 포인트"></button>
       <button id="riverPointBtn" class="glass-lens-btn" aria-label="강가 포인트"></button>
 
@@ -375,6 +388,76 @@
         const playBtn = document.getElementById('playBtn');
         const overlay = document.getElementById('overlay');
         const homeBtn = document.getElementById('homeBtn');
+        const birdAmbience = document.getElementById('birdAmbience');
+        const grassAmbience = document.getElementById('grassAmbience');
+        const riverAmbience = document.getElementById('riverAmbience');
+
+        const ambienceTracks = [
+          { audio: birdAmbience, volume: 0.2, birds: true },
+          { audio: grassAmbience, volume: 0.26, birds: false },
+          { audio: riverAmbience, volume: 0.28, birds: false }
+        ];
+        let zoomStageStarted = false;
+        let birdFadeAnimation = null;
+
+        ambienceTracks.forEach(({ audio, volume }) => {
+          if (audio) audio.volume = volume;
+        });
+
+        // 브라우저가 허용하면 페이지가 열리자마자 재생하고,
+        // 자동 재생이 차단되면 첫 사용자 입력에서 즉시 다시 시도합니다.
+        function startAmbience(includeBirds = !zoomStageStarted) {
+          ambienceTracks.forEach(({ audio, volume, birds }) => {
+            if (!audio || (birds && (!includeBirds || zoomStageStarted))) return;
+            audio.volume = volume;
+            const playPromise = audio.play();
+            if (playPromise !== undefined) {
+              playPromise.catch(() => {
+                // 소리 자동 재생은 브라우저 정책상 사용자 입력 전까지 차단될 수 있습니다.
+              });
+            }
+          });
+        }
+
+        function fadeOutBirdAmbience(duration = 900) {
+          if (!birdAmbience) return;
+
+          if (birdFadeAnimation) {
+            cancelAnimationFrame(birdFadeAnimation);
+          }
+
+          if (birdAmbience.paused) {
+            birdAmbience.volume = 0;
+            return;
+          }
+
+          const startVolume = birdAmbience.volume;
+          const startTime = performance.now();
+
+          const fade = (now) => {
+            const progress = Math.min((now - startTime) / duration, 1);
+            birdAmbience.volume = Math.max(0, startVolume * (1 - progress));
+
+            if (progress < 1) {
+              birdFadeAnimation = requestAnimationFrame(fade);
+            } else {
+              birdAmbience.pause();
+              birdAmbience.currentTime = 0;
+              birdFadeAnimation = null;
+            }
+          };
+
+          birdFadeAnimation = requestAnimationFrame(fade);
+        }
+
+        function unlockAmbience(event) {
+          const isPlayButtonAction = event.target instanceof Element && event.target.closest('#playBtn');
+          startAmbience(!zoomStageStarted && !isPlayButtonAction);
+        }
+
+        document.addEventListener('pointerdown', unlockAmbience, { capture: true });
+        document.addEventListener('keydown', unlockAmbience, { capture: true });
+        startAmbience(true);
 
         // 첫 번째 비디오 강제 재생 실행
         if (bgVideo) {
@@ -419,6 +502,9 @@
 
         if (playBtn) {
           playBtn.addEventListener('click', () => {
+            zoomStageStarted = true;
+            startAmbience(false);
+            fadeOutBirdAmbience();
             overlay.classList.add('hidden');
             
             switchVideoSeamlessly(bgVideo, zoomTransition, () => {
@@ -454,7 +540,7 @@
 
         if (homeBtn) {
           homeBtn.addEventListener('click', () => {
-          window.location.href = 'new main.html#gallerySection';
+            window.location.href = 'new main.html#gallerySection';
           });
         }
       })();
@@ -463,3 +549,4 @@
 
 </body>
 </html>
+
