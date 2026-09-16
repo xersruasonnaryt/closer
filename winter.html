@@ -174,11 +174,78 @@
       top: 68%;
       left: 68%;
     }
+
+    .home-glass-btn {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      z-index: 50;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.05) 60%, rgba(255, 255, 255, 0.15) 100%);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      box-shadow:
+        0 0 12px rgba(255, 255, 255, 0.2),
+        2px 6px 14px rgba(0, 0, 0, 0.15),
+        inset 1px 1px 2px rgba(255, 255, 255, 0.8),
+        inset -1px -1px 4px rgba(255, 255, 255, 0.2);
+      cursor: pointer;
+      outline: none;
+      transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+      pointer-events: auto;
+    }
+
+    .home-glass-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: #ffffff;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+      transition: transform 0.3s ease;
+    }
+
+    .home-glass-btn:hover {
+      transform: scale(1.1);
+      box-shadow:
+        0 0 16px rgba(255, 255, 255, 0.4),
+        4px 8px 20px rgba(0, 0, 0, 0.2),
+        inset 1px 1.5px 3px rgba(255, 255, 255, 0.95);
+    }
+
+    .home-glass-btn:hover svg {
+      transform: scale(1.08);
+    }
+
+    .home-glass-btn:active {
+      transform: scale(0.92);
+    }
+
   </style>
 </head>
 <body>
 
   <div class="video-container">
+
+    <button id="homeBtn" class="home-glass-btn" aria-label="메인 화면 세 번째 섹션으로 이동">
+
+      <svg viewBox="0 0 24 24">
+
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+
+        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+
+      </svg>
+
+    </button>
     <!-- 의자 이동 비디오 -->
     <video id="chairVideo" class="fullscreen-video" muted playsinline preload="auto">
       <source src="winter to chair.mp4" type="video/mp4" />
@@ -238,6 +305,15 @@
     chairVideo.addEventListener('ended', () => {
       chairVideo.pause();
     });
+  </script>
+
+  <script>
+    const detailHomeBtn = document.getElementById('homeBtn');
+    if (detailHomeBtn) {
+      detailHomeBtn.addEventListener('click', () => {
+        window.location.href = 'new main.html#gallerySection';
+      });
+    }
   </script>
 
 </body>
