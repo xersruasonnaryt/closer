@@ -438,7 +438,7 @@
 
     preloadPageAndResources(pageUrls[0]);
 
-    // 💡 동적 페이지 전환 및 비디오 재생 제어 함수 보완
+   // 동적 페이지 전환 및 비디오 재생 제어 함수
     function applyLoadedPage(htmlText, url) {
       const parser = new DOMParser();
       const newDoc = parser.parseFromString(htmlText, 'text/html');
@@ -449,25 +449,26 @@
       appContainer.innerHTML = newAppContent.innerHTML;
       window.scrollTo(0, 0);
 
-      // 삽입된 HTML 내의 모든 동영상 요소를 강제 초기화 및 즉시 재생
-      const newVideos = appContainer.querySelectorAll('video');
-      newVideos.forEach(video => {
-        video.load();
-        if (video.hasAttribute('autoplay') || video.classList.contains('active')) {
-          const playPromise = video.play();
-          if (playPromise !== undefined) {
-            playPromise.catch(e => console.log("비디오 재생 대기:", e));
-          }
-        }
-      });
-
-      // 스크립트 실행 동적 바인딩
+      // 스크립트 동적 다시 바인딩 및 실행
       const scripts = appContainer.querySelectorAll('script');
       scripts.forEach(oldScript => {
         const newScript = document.createElement('script');
         Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
         newScript.appendChild(document.createTextNode(oldScript.innerHTML));
         oldScript.parentNode.replaceChild(newScript, oldScript);
+      });
+
+      // 동영상 강제 로드 및 초기 비디오 재생 처리
+      const newVideos = appContainer.querySelectorAll('video');
+      newVideos.forEach(video => {
+        video.load();
+        if (video.hasAttribute('autoplay') || video.classList.contains('active') || video.id === 'bgVideo') {
+          video.currentTime = 0;
+          const playPromise = video.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(e => console.log("비디오 재생 준비 중:", e));
+          }
+        }
       });
 
       history.pushState(null, '', url);
