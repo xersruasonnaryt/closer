@@ -343,6 +343,22 @@
       브라우저가 비디오 태그를 지원하지 않습니다.
     </video>
 
+    <audio id="streetAmbience" loop preload="auto" aria-hidden="true">
+      <source src="https://cdn.pixabay.com/audio/2024/11/16/audio_953c890059.mp3" type="audio/mpeg" />
+    </audio>
+    <audio id="whisperAmbience" loop preload="auto" aria-hidden="true">
+      <source src="https://cdn.pixabay.com/audio/2022/03/09/audio_df295f4036.mp3" type="audio/mpeg" />
+    </audio>
+    <audio id="lofiAmbience" loop preload="auto" aria-hidden="true">
+      <source src="https://cdn.pixabay.com/audio/2026/08/04/audio_d8fcc683c0.mp3" type="audio/mpeg" />
+    </audio>
+    <audio id="cutlerySfx" preload="auto" aria-hidden="true">
+      <source src="https://commons.wikimedia.org/wiki/Special:Redirect/file/Cutlery_on_table.ogg" type="audio/ogg" />
+    </audio>
+    <audio id="pageTurnSfx" preload="auto" aria-hidden="true">
+      <source src="https://commons.wikimedia.org/wiki/Special:Redirect/file/Turning_a_page.ogg" type="audio/ogg" />
+    </audio>
+
     <div class="content-overlay" id="overlay">
       <button class="pure-glass-btn" id="playBtn" aria-label="재생 버튼">
         Click
@@ -366,8 +382,123 @@
     const showcaseBtn = document.getElementById('showcaseBtn');
     const homeBtn = document.getElementById('homeBtn');
 
+    const streetAmbience = document.getElementById('streetAmbience');
+    const whisperAmbience = document.getElementById('whisperAmbience');
+    const lofiAmbience = document.getElementById('lofiAmbience');
+    const cutlerySfx = document.getElementById('cutlerySfx');
+    const pageTurnSfx = document.getElementById('pageTurnSfx');
+
+    const STREET_VOLUME = 0.34;
+    streetAmbience.volume = STREET_VOLUME;
+    whisperAmbience.volume = 0.18;
+    lofiAmbience.volume = 0.16;
+    cutlerySfx.volume = 0.15;
+    pageTurnSfx.volume = 0.22;
+
+    let cafeStageStarted = false;
+    let streetFadeFrame = null;
+    let cutleryTimer = null;
+    let pageTurnTimer = null;
+
     const videos = [bgVideo, zoomVideo, flowerVideo, cakeVideo];
     videos.forEach(v => v.load());
+
+    function playAudio(audio, restart = false) {
+      if (restart) audio.currentTime = 0;
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          // 소리 자동 재생이 차단되면 다음 사용자 입력에서 다시 시도합니다.
+        });
+      }
+    }
+
+    function startStreetAudio() {
+      if (cafeStageStarted) return;
+      streetAmbience.volume = STREET_VOLUME;
+      playAudio(streetAmbience);
+    }
+
+    function fadeOutStreet() {
+      if (streetFadeFrame) cancelAnimationFrame(streetFadeFrame);
+
+      if (streetAmbience.paused) {
+        streetAmbience.currentTime = 0;
+        streetAmbience.volume = STREET_VOLUME;
+        return;
+      }
+
+      const startVolume = streetAmbience.volume;
+      const startTime = performance.now();
+      const duration = 700;
+
+      const fade = now => {
+        const progress = Math.min((now - startTime) / duration, 1);
+        streetAmbience.volume = startVolume * (1 - progress);
+
+        if (progress < 1) {
+          streetFadeFrame = requestAnimationFrame(fade);
+          return;
+        }
+
+        streetAmbience.pause();
+        streetAmbience.currentTime = 0;
+        streetAmbience.volume = STREET_VOLUME;
+        streetFadeFrame = null;
+      };
+
+      streetFadeFrame = requestAnimationFrame(fade);
+    }
+
+    function scheduleCutlery() {
+      clearTimeout(cutleryTimer);
+      const delay = 9000 + Math.random() * 7000;
+      cutleryTimer = setTimeout(() => {
+        if (!cafeStageStarted) return;
+        playAudio(cutlerySfx, true);
+        scheduleCutlery();
+      }, delay);
+    }
+
+    function schedulePageTurn() {
+      clearTimeout(pageTurnTimer);
+      const delay = 13000 + Math.random() * 11000;
+      pageTurnTimer = setTimeout(() => {
+        if (!cafeStageStarted) return;
+        playAudio(pageTurnSfx, true);
+        schedulePageTurn();
+      }, delay);
+    }
+
+    function removeStreetUnlockListeners() {
+      document.removeEventListener('pointerdown', unlockStreetAudio, true);
+      document.removeEventListener('keydown', unlockStreetAudio, true);
+    }
+
+    function startCafeAudio() {
+      if (cafeStageStarted) return;
+      cafeStageStarted = true;
+      removeStreetUnlockListeners();
+      fadeOutStreet();
+
+      playAudio(whisperAmbience);
+      playAudio(lofiAmbience);
+      playAudio(cutlerySfx, true);
+      playAudio(pageTurnSfx, true);
+      scheduleCutlery();
+      schedulePageTurn();
+    }
+
+    function unlockStreetAudio(event) {
+      const target = event.target;
+      if (target instanceof Element && target.closest('#playBtn')) return;
+      startStreetAudio();
+    }
+
+    // 브라우저가 유음 자동 재생을 막으면 첫 클릭·터치·키 입력에서 거리 소리를 시작합니다.
+    startStreetAudio();
+    document.addEventListener('pointerdown', unlockStreetAudio, true);
+    document.addEventListener('keydown', unlockStreetAudio, true);
 
     function switchVideoSeamlessly(currentEl, nextVideo, onEndedCallback) {
       nextVideo.currentTime = 0;
@@ -414,6 +545,7 @@
     }
 
     playBtn.addEventListener('click', () => {
+      startCafeAudio();
       overlay.classList.add('hidden');
       switchVideoSeamlessly(bgVideo, zoomVideo, () => {
         windowBtn.classList.add('visible');
