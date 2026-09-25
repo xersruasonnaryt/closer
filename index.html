@@ -104,68 +104,33 @@
       pointer-events: auto;
     }
 
-    /* 오로라 & 소프트 글래스모피즘 스타일 (Click 버튼) */
-    .clean-click-btn {
+    /* 두 번째 섹션의 클릭 텍스트 */
+    .click-text {
       position: absolute;
       top: 50%;
       left: 65%;
       transform: translate(-50%, -50%);
       z-index: 20;
 
-      padding: 12px 32px;
-      font-size: 13px;
+      padding: 0;
+      font-size: 25px;
       font-weight: 300;
       letter-spacing: 2px;
       color: #6B6B80;
-
-      background: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.75) 0%,
-        rgba(235, 238, 255, 0.5) 45%,
-        rgba(253, 236, 248, 0.5) 80%,
-        rgba(255, 255, 255, 0.65) 100%
-      );
-
-      backdrop-filter: blur(16px) saturate(180%);
-      -webkit-backdrop-filter: blur(16px) saturate(180%);
-      
-      border: 1px solid rgba(255, 255, 255, 0.85);
-      border-radius: 40px;
-      box-shadow: 
-        0 12px 28px -6px rgba(160, 165, 195, 0.25),
-        0 4px 12px rgba(255, 255, 255, 0.8) inset,
-        0 -4px 10px rgba(220, 215, 240, 0.3) inset;
-
+      background: none;
+      border: 0;
+      box-shadow: none;
       cursor: pointer;
       outline: none;
-      transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+      transition: color 0.25s ease, opacity 0.4s ease;
     }
 
-    .clean-click-btn:hover {
-      background: linear-gradient(
-        135deg,
-        rgba(255, 255, 255, 0.88) 0%,
-        rgba(240, 243, 255, 0.65) 45%,
-        rgba(255, 242, 252, 0.65) 80%,
-        rgba(255, 255, 255, 0.8) 100%
-      );
+    .click-text:hover,
+    .click-text:focus-visible {
       color: #4A4A5A;
-      border-color: rgba(255, 255, 255, 1);
-      box-shadow: 
-        0 16px 36px -4px rgba(150, 155, 190, 0.35),
-        0 4px 14px rgba(255, 255, 255, 0.9) inset,
-        0 -4px 12px rgba(210, 205, 235, 0.4) inset;
-      transform: translate(-50%, -50%) scale(1.03);
     }
 
-    .clean-click-btn:active {
-      transform: translate(-50%, -50%) scale(0.97);
-      box-shadow: 
-        0 6px 18px -4px rgba(160, 165, 195, 0.2),
-        0 2px 8px rgba(255, 255, 255, 0.8) inset;
-    }
-
-    .clean-click-btn.hidden {
+    .click-text.hidden {
       opacity: 0;
       visibility: hidden;
       pointer-events: none;
@@ -245,6 +210,26 @@
       box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
     }
 
+    .card-title {
+      position: absolute;
+      left: 50%;
+      bottom: 10px;
+      transform: translateX(-50%);
+      z-index: 2;
+      width: calc(100% - 20px);
+      color: #ffffff;
+      font-family: "Pretendard Variable", Pretendard, sans-serif;
+      font-size: 6.5px;
+      font-weight: 500;
+      line-height: 1.4;
+      letter-spacing: 0;
+      text-align: center;
+      text-shadow:
+        0 0 3px rgba(0, 0, 0, 0.36),
+        0 0 8px rgba(0, 0, 0, 0.18);
+      pointer-events: none;
+    }
+
     .transition-overlay {
       position: fixed; top: 0; left: 0;
       width: 100vw; height: 100vh; z-index: 99999;
@@ -291,8 +276,8 @@
         <img class="bg-image" src="https://i.imgur.com/8uoSgb2.png" alt="Featured Visual">
         <!-- 클릭 시 오버레이될 이미지 -->
         <img class="overlay-image" id="overlayImage" src="https://i.imgur.com/pB6I1fG.png" alt="Overlay Visual">
-        <!-- 오로라 글래스모피즘 Click 버튼 -->
-        <button class="clean-click-btn" id="clickBtn">(Click)</button>
+        <!-- 버튼 외형 없이 표시되는 클릭 텍스트 -->
+        <span class="click-text" id="clickText" role="button" tabindex="0">click</span>
       </div>
 
       <!-- 두 번째 섹션 하단 스크롤 안내 가이드 -->
@@ -348,12 +333,20 @@
       scrollToSection("#gallerySection");
     });
 
-    const clickBtn = document.getElementById("clickBtn");
+    const clickText = document.getElementById("clickText");
     const overlayImage = document.getElementById("overlayImage");
 
-    clickBtn.addEventListener("click", () => {
-      clickBtn.classList.add("hidden");
+    const showOverlayImage = () => {
+      clickText.classList.add("hidden");
       overlayImage.classList.add("active");
+    };
+
+    clickText.addEventListener("click", showOverlayImage);
+    clickText.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        showOverlayImage();
+      }
     });
 
     const maskedCropImg = 'https://i.imgur.com/7E0yt7r.jpeg'; 
@@ -365,6 +358,14 @@
       'https://i.imgur.com/7X1XJAK.jpeg',
       'https://i.imgur.com/aycQ110.jpeg',
       'https://i.imgur.com/ccPDQhK.jpeg'
+    ];
+
+    const categoryTitles = [
+      '맑은 봄날의 피크닉',
+      '해 질 녘의 골목길 북카페',
+      '바람 불어오는 항구 마을',
+      '하얗게 눈 내리는 정원',
+      '늦은 밤 불 꺼진 내 방'
     ];
 
     /* 각 카테고리 전환 트랜지션 시 확대 표시될 이미지들 */
@@ -482,6 +483,11 @@
 
       const imgIndex = i % images.length;
       const imgUrl = images[imgIndex];
+
+      const cardTitle = document.createElement('span');
+      cardTitle.className = 'card-title';
+      cardTitle.textContent = categoryTitles[imgIndex];
+      cardEl.appendChild(cardTitle);
 
       cardEl.style.background = dummyGradients[imgIndex];
 
