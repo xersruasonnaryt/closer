@@ -113,10 +113,10 @@
       z-index: 20;
 
       padding: 0;
-      font-size: 25px;
+      font-size: 20px;
       font-weight: 300;
       letter-spacing: 2px;
-      color: #6B6B80;
+      color: #3969AA;
       background: none;
       border: 0;
       box-shadow: none;
@@ -219,7 +219,7 @@
       width: calc(100% - 20px);
       color: #ffffff;
       font-family: "Pretendard Variable", Pretendard, sans-serif;
-      font-size: 6.5px;
+      font-size: 7px;
       font-weight: 500;
       line-height: 1.4;
       letter-spacing: 0;
@@ -249,6 +249,15 @@
     .list-container.visible { opacity: 1; pointer-events: auto; }
     .list-item { font-size: 15px; font-weight: 400; color: #111111; opacity: 0.7; cursor: pointer; transition: opacity 0.25s ease; }
     .list-item:hover { opacity: 1; }
+
+    .gallery-sound-enable {
+      position: absolute; bottom: 24px; left: 50%;
+      transform: translateX(-50%); z-index: 2100;
+      padding: 8px 14px; border: 1px solid rgba(0, 0, 0, 0.12);
+      border-radius: 20px; background: rgba(255, 255, 255, 0.92);
+      color: #555; font: 500 12px Pretendard, sans-serif; cursor: pointer;
+    }
+    .gallery-sound-enable[hidden] { display: none; }
   </style>
 </head>
 <body>
@@ -289,6 +298,7 @@
 
     <!-- 3. 갤러리 섹션 -->
     <section class="gallery-section" id="gallerySection">
+      <button class="gallery-sound-enable" id="gallerySoundEnable" type="button" hidden>소리 켜기</button>
       <div class="nav-header">
         <span id="btn-spiral" class="active">spiral</span>
         <div class="dot"></div>
@@ -413,6 +423,121 @@
     const maxScroll = (totalSlots - 1) * yStep;
     const cards = [];
 
+    // 상세 페이지에서 사용하던 소스. 페이지 주소를 키로 삼아 이미지와 소리를 연결한다.
+    const categorySounds = {
+      'picnic.html': {
+        src: 'https://upload.wikimedia.org/wikipedia/commons/2/26/Flowing-water-100019.ogg', volume: 0.18
+      },
+      'bookcafe.html': {
+        src: 'https://cdn.pixabay.com/audio/2026/08/04/audio_d8fcc683c0.mp3', volume: 0.16
+      },
+      'port.html': {
+        src: 'https://cdn.pixabay.com/audio/2022/03/10/audio_39ffd1c0d0.mp3', volume: 0.20
+      },
+      'winter.html': {
+        src: 'https://cdn.pixabay.com/audio/2025/04/01/audio_07bd8f2cbe.mp3', volume: 0.28
+      },
+      'nightroom.html': {
+        src: 'https://cdn.pixabay.com/audio/2022/03/09/audio_0f63809db8.mp3', volume: 0.26
+      }
+    };
+    // 오디오 하나만 사용하여 빠르게 카드를 옮겨도 소리가 겹치지 않는다.
+    const hoverAudio = new Audio();
+    hoverAudio.preload = 'metadata';
+    hoverAudio.loop = true;
+    const gallerySoundEnable = document.getElementById('gallerySoundEnable');
+    let hoveredCard = null;
+    let hoverPointer = null;
+    let hoverAudioRequest = 0;
+    let hoverAudioReady = false;
+    let lastHoverCheck = 0;
+
+    function resetHoverAudioTime() {
+      try { hoverAudio.currentTime = 0; } catch (_) { /* 아직 로드되지 않은 소스 */ }
+    }
+
+    function stopHoverSound() {
+      hoverAudioRequest++;
+      hoverAudio.pause();
+      resetHoverAudioTime();
+      hoveredCard = null;
+    }
+
+    function playHoverSound(silent = false) {
+      const request = ++hoverAudioRequest;
+      hoverAudio.play().then(() => {
+        if (request !== hoverAudioRequest) return;
+        hoverAudioReady = true;
+        gallerySoundEnable.hidden = true;
+        if (silent || !hoveredCard) {
+          hoverAudio.pause();
+          resetHoverAudioTime();
+        }
+      }).catch(error => {
+        if (request !== hoverAudioRequest) return;
+        if (error.name === 'NotAllowedError') {
+          hoverAudioReady = false;
+          gallerySoundEnable.hidden = false;
+        } else if (error.name !== 'AbortError') {
+          console.warn('카테고리 소리를 불러오지 못했습니다:', error);
+        }
+      });
+    }
+
+    function setHoveredCard(card) {
+      if (card === hoveredCard) return;
+      stopHoverSound();
+      if (!card) return;
+      const sound = categorySounds[pageUrls[Number(card.dataset.categoryIndex)]];
+      if (!sound) return;
+      hoveredCard = card;
+      if (hoverAudio.src !== sound.src) hoverAudio.src = sound.src;
+      hoverAudio.volume = sound.volume;
+      playHoverSound();
+    }
+
+    function syncHoverSound() {
+      if (!hoverPointer || currentView !== 'spiral' || isNavigatingToDetail || document.hidden || !document.hasFocus()) {
+        if (hoveredCard) stopHoverSound();
+        return;
+      }
+      const element = document.elementFromPoint(hoverPointer.x, hoverPointer.y);
+      const card = element ? element.closest('.card-element') : null;
+      setHoveredCard(card && spiral.contains(card) ? card : null);
+    }
+
+    // 첫 클릭/키 입력으로 같은 오디오 요소를 준비한다. 이미지 밖에서는 무음으로 준비한다.
+    function unlockHoverSound() {
+      if (hoverAudioReady || document.hidden || isNavigatingToDetail) return;
+      if (hoveredCard) {
+        playHoverSound();
+      } else {
+        if (!hoverAudio.src) hoverAudio.src = categorySounds['picnic.html'].src;
+        hoverAudio.volume = 0;
+        playHoverSound(true);
+      }
+    }
+
+    document.addEventListener('pointerdown', unlockHoverSound, { capture: true });
+    document.addEventListener('keydown', unlockHoverSound, { capture: true });
+    gallerySoundEnable.addEventListener('click', unlockHoverSound);
+    document.addEventListener('pointermove', event => {
+      if (event.pointerType === 'touch') return;
+      hoverPointer = { x: event.clientX, y: event.clientY };
+      syncHoverSound();
+    }, { passive: true });
+
+    function clearHoverSound() {
+      hoverPointer = null;
+      stopHoverSound();
+    }
+    document.documentElement.addEventListener('pointerleave', clearHoverSound);
+    window.addEventListener('blur', clearHoverSound);
+    window.addEventListener('pagehide', clearHoverSound);
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) clearHoverSound();
+    });
+
     function triggerMaskExpand(cardEl, expandImgUrl, targetUrl) {
       let centerX = window.innerWidth / 2;
       let centerY = window.innerHeight / 2;
@@ -465,6 +590,7 @@
     function navigateToDetail(index, cardEl) {
       if (isNavigatingToDetail) return;
       isNavigatingToDetail = true;
+      clearHoverSound();
 
       const imgIndex = index % images.length;
       const targetUrl = pageUrls[imgIndex];
@@ -483,6 +609,7 @@
 
       const imgIndex = i % images.length;
       const imgUrl = images[imgIndex];
+      cardEl.dataset.categoryIndex = String(imgIndex);
 
       const cardTitle = document.createElement('span');
       cardTitle.className = 'card-title';
@@ -519,6 +646,7 @@
 
     // 뒤로가기로 메인 화면이 복원될 때 전환 이미지를 남기지 않는다.
     window.addEventListener('pageshow', () => {
+      clearHoverSound();
       isNavigatingToDetail = false;
       gsap.killTweensOf(transitionOverlay);
       gsap.set(transitionOverlay, { opacity: 0 });
@@ -544,6 +672,7 @@
     btnList.addEventListener('click', () => {
       if (currentView === 'list') return;
       currentView = 'list';
+      clearHoverSound();
       btnList.classList.add('active');
       btnSpiral.classList.remove('active');
       spiral.classList.add('hidden');
@@ -607,7 +736,7 @@
 
     window.addEventListener('mouseup', () => isDragging = false);
 
-    function render() {
+    function render(time = 0) {
       if (currentView === 'spiral') {
         scrollProgress += (targetScrollProgress - scrollProgress) * 0.06;
 
@@ -627,7 +756,7 @@
           let depthFactor = (z + radius) / (radius * 2);
           depthFactor = Math.max(0, Math.min(1, depthFactor));
 
-          const blurAmount = Math.pow(1 - depthFactor, 1.5) * 16;
+          const blurAmount = Math.pow(1 - depthFactor, 1.5) * 6;
           const opacityAmount = Math.pow(depthFactor, 2.2) * 0.85 + 0.15;
 
           card.element.style.filter = `blur(${blurAmount.toFixed(1)}px)`;
@@ -636,6 +765,11 @@
             card.element.style.opacity = opacityAmount.toFixed(2);
           }
         });
+      }
+      // 스파이럴이 움직여 고정된 커서 아래의 이미지가 바뀌는 경우도 반영한다.
+      if (time - lastHoverCheck >= 80) {
+        lastHoverCheck = time;
+        syncHoverSound();
       }
       requestAnimationFrame(render);
     }
